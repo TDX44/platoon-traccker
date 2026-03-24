@@ -67,6 +67,10 @@
     background: #1a1a2e; padding: 12px 8px; font-weight: 700; font-size: 0.95em;
     color: #fdcb6e; border-bottom: 2px solid #fdcb6e; letter-spacing: 0.5px;
   }
+  tr.section-header-tdy td {
+    background: #1a1a2e; padding: 12px 8px; font-weight: 700; font-size: 0.95em;
+    color: #74b9ff; border-bottom: 2px solid #74b9ff; letter-spacing: 0.5px;
+  }
 
   .present-btn {
     padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer;
@@ -88,6 +92,17 @@
   .badge-tdy { background: #0984e3; color: #fff; }
   .badge-other { background: #e17055; color: #fff; }
   .badge-ftr { background: #d63031; color: #fff; }
+
+  .returned-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.7em;
+    font-weight: 600; background: #00b894; color: #fff; margin-left: 6px;
+    animation: returnPulse 2s ease-in-out;
+  }
+  @keyframes returnPulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
 
   .edit-unit-name {
     background: transparent; border: 1px solid transparent; color: #00d4ff;
@@ -400,8 +415,25 @@ function escapeHtml(str) {
 
 // ─── Render ───
 function render() {
+  // Auto-return: move people back to present if their end date has passed
+  const todayStr = getTodayStr();
+  const recentlyReturned = new Set();
+  personnel.forEach(p => {
+    if (p.status !== 'present' && p.to && p.to < todayStr) {
+      p.returnedFrom = p.notes || p.status;
+      p.returnedDate = p.to;
+      p.status = 'present';
+      p.notes = '';
+      p.from = '';
+      p.to = '';
+      recentlyReturned.add(p);
+    }
+  });
+
   const presentList = personnel.filter(p => !isAway(p)).sort(rankSort);
-  const awayList = personnel.filter(p => isAway(p)).sort(endDateSort);
+  const leaveList = personnel.filter(p => p.status === 'leave' || p.status === 'pass').sort(endDateSort);
+  const tdyList = personnel.filter(p => p.status === 'tdy').sort(endDateSort);
+  const otherList = personnel.filter(p => p.status === 'other' || p.status === 'ftr').sort(endDateSort);
   const body = document.getElementById('personnelBody');
   body.innerHTML = '';
 
@@ -412,11 +444,12 @@ function render() {
 
   presentList.forEach(p => {
     const i = personnel.indexOf(p);
+    const returnedBadge = recentlyReturned.has(p) ? `<span class="returned-badge">RETURNED</span>` : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${rowNum++}</td>
       <td class="rank-cell">${p.rank}</td>
-      <td class="name-cell">${p.last}, ${p.first}</td>
+      <td class="name-cell">${p.last}, ${p.first}${returnedBadge}</td>
       <td><button class="present-btn active">&#10003; Present</button></td>
       <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
       <td><button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
@@ -424,33 +457,31 @@ function render() {
     body.appendChild(tr);
   });
 
-  if (awayList.length) {
+  // Leave / Pass section
+  if (leaveList.length) {
     const sep = document.createElement('tr');
     sep.className = 'section-header';
-    sep.innerHTML = `<td colspan="6">AWAY &mdash; TDY / Leave / Pass / Other (${awayList.length}) &nbsp; <span style="font-size:0.75em;font-weight:400;color:#b2bec3;">sorted by return date</span></td>`;
+    sep.innerHTML = `<td colspan="6">LEAVE / PASS (${leaveList.length}) &nbsp; <span style="font-size:0.75em;font-weight:400;color:#b2bec3;">sorted by return date</span></td>`;
     body.appendChild(sep);
+    leaveList.forEach(p => { body.appendChild(buildAwayRow(p, rowNum++)); });
+  }
 
-    awayList.forEach(p => {
-      const i = personnel.indexOf(p);
-      const dateRange = (p.from || p.to) ? `${formatDateShort(p.from)} - ${formatDateShort(p.to)}` : '';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${rowNum++}</td>
-        <td class="rank-cell">${p.rank}</td>
-        <td class="name-cell">
-          ${p.last}, ${p.first}
-          ${p.notes ? `<div class="away-notes">${escapeHtml(p.notes)}</div>` : ''}
-          ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
-        </td>
-        <td><button class="present-btn inactive" onclick="markPresent(${i})">&#9675; Mark Present</button></td>
-        <td>
-          ${statusBadge(p.status)}
-          <button class="btn-tdy-leave" onclick="openTdyLeave(${i})" style="margin-left:6px;">Edit</button>
-        </td>
-        <td><button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
-      `;
-      body.appendChild(tr);
-    });
+  // TDY / School section
+  if (tdyList.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'section-header-tdy';
+    sep.innerHTML = `<td colspan="6">TDY / SCHOOL (${tdyList.length}) &nbsp; <span style="font-size:0.75em;font-weight:400;color:#b2bec3;">sorted by return date</span></td>`;
+    body.appendChild(sep);
+    tdyList.forEach(p => { body.appendChild(buildAwayRow(p, rowNum++)); });
+  }
+
+  // Other / FTR section
+  if (otherList.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'section-header';
+    sep.innerHTML = `<td colspan="6" style="color:#e17055;border-color:#e17055;">OTHER / FTR (${otherList.length})</td>`;
+    body.appendChild(sep);
+    otherList.forEach(p => { body.appendChild(buildAwayRow(p, rowNum++)); });
   }
 
   const total = personnel.length;
@@ -464,6 +495,33 @@ function render() {
     <div class="stat"><div class="num" style="color:#d63031">${counts.ftr}</div><div class="label">FTR</div></div>
   `;
   save();
+}
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function buildAwayRow(p, rowNum) {
+  const i = personnel.indexOf(p);
+  const dateRange = (p.from || p.to) ? `${formatDateShort(p.from)} - ${formatDateShort(p.to)}` : '';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${rowNum}</td>
+    <td class="rank-cell">${p.rank}</td>
+    <td class="name-cell">
+      ${p.last}, ${p.first}
+      ${p.notes ? `<div class="away-notes">${escapeHtml(p.notes)}</div>` : ''}
+      ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
+    </td>
+    <td><button class="present-btn inactive" onclick="markPresent(${i})">&#9675; Mark Present</button></td>
+    <td>
+      ${statusBadge(p.status)}
+      <button class="btn-tdy-leave" onclick="openTdyLeave(${i})" style="margin-left:6px;">Edit</button>
+    </td>
+    <td><button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
+  `;
+  return tr;
 }
 
 function markPresent(i) {
@@ -800,11 +858,34 @@ function generateReport() {
 
 function copyReport() {
   const text = document.getElementById('reportText').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.report-buttons .btn-generate');
+  const btn = document.querySelector('.report-buttons .btn-generate');
+
+  // Try modern clipboard API first, fallback for Firefox / non-HTTPS
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy to Clipboard', 1500);
+    }).catch(() => fallbackCopy(text, btn));
+  } else {
+    fallbackCopy(text, btn);
+  }
+}
+
+function fallbackCopy(text, btn) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
     btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy to Clipboard', 1500);
-  });
+  } catch (e) {
+    btn.textContent = 'Select All + Ctrl-C';
+  }
+  document.body.removeChild(ta);
+  setTimeout(() => btn.textContent = 'Copy to Clipboard', 1500);
 }
 function closeReport() { document.getElementById('reportModal').classList.remove('active'); }
 
