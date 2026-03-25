@@ -411,6 +411,7 @@
   <button class="btn-import" onclick="openImportModal()">&#8595; Import List</button>
   <button class="btn-reset" onclick="resetDay()">Reset Day</button>
   <button class="btn-generate" onclick="generateReport()">Generate Report</button>
+  <button class="btn-reset" onclick="openChangePwModal()">&#128273; Password</button>
 </div>
 
 <div class="table-wrap">
@@ -534,25 +535,6 @@
     <div class="report-buttons">
       <button class="btn-small btn-generate" onclick="copyReport()">Copy to Clipboard</button>
       <button class="btn-small btn-danger" onclick="closeReport()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Change Password Modal -->
-<div class="modal-overlay" id="changePwModal">
-  <div class="modal">
-    <h2>Change Password</h2>
-    <label>Current Password</label>
-    <input type="password" id="cpCurrent" placeholder="Current password" autocomplete="current-password" />
-    <label>New Password</label>
-    <input type="password" id="cpNew" placeholder="New password (min 6 chars)" autocomplete="new-password" />
-    <label>Confirm New Password</label>
-    <input type="password" id="cpConfirm" placeholder="Confirm new password" autocomplete="new-password" />
-    <div id="cpError" class="login-error" style="display:none"></div>
-    <div id="cpSuccess" style="display:none;background:#00b89422;border:1px solid #00b894;color:#00b894;padding:8px 12px;border-radius:5px;font-size:0.85em;margin-bottom:12px;"></div>
-    <div class="modal-buttons">
-      <button class="btn-small btn-danger" onclick="closeChangePwModal()">Cancel</button>
-      <button class="btn-small btn-add" onclick="submitChangePw()">Save</button>
     </div>
   </div>
 </div>
@@ -1701,5 +1683,24 @@ initApp();
 </script>
 
 </div><!-- end #platoonScreen -->
+
+<!-- Change Password Modal (global — works from any screen) -->
+<div class="modal-overlay" id="changePwModal">
+  <div class="modal">
+    <h2>Change Password</h2>
+    <label>Current Password</label>
+    <input type="password" id="cpCurrent" placeholder="Current password" autocomplete="current-password" />
+    <label>New Password</label>
+    <input type="password" id="cpNew" placeholder="New password (min 6 chars)" autocomplete="new-password" />
+    <label>Confirm New Password</label>
+    <input type="password" id="cpConfirm" placeholder="Confirm new password" autocomplete="new-password" />
+    <div id="cpError" class="login-error" style="display:none"></div>
+    <div id="cpSuccess" style="display:none;background:#00b89422;border:1px solid #00b894;color:#00b894;padding:8px 12px;border-radius:5px;font-size:0.85em;margin-bottom:12px;"></div>
+    <div class="modal-buttons">
+      <button class="btn-small btn-danger" onclick="closeChangePwModal()">Cancel</button>
+      <button class="btn-small btn-add" onclick="submitChangePw()">Save</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
