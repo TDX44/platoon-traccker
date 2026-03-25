@@ -36,6 +36,9 @@
   .import-preview td { padding: 3px 6px; border-bottom: 1px solid #3a3a55; }
   .import-error { color: #e17055; font-size: 0.8em; margin-top: 4px; }
   .import-hint { font-size: 0.78em; color: #636e72; margin-bottom: 8px; line-height: 1.5; }
+  .tdy-field-separator { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+  .tdy-field-separator::before, .tdy-field-separator::after { content: ''; flex: 1; height: 1px; background: #3a3a55; }
+  .tdy-field-separator span { font-size: 0.72em; color: #636e72; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; }
 
   /* Modals */
   .modal-overlay {
@@ -300,8 +303,10 @@
     </div>
 
     <div class="tdy-school-row" id="tdySchoolRow">
-      <label>School / Location</label>
-      <input type="text" id="awaySchool" placeholder="e.g. Phase 1 Dothan, IPC, SERE 220" />
+      <label>School / Course</label>
+      <input type="text" id="awaySchool" placeholder="e.g. IPC, SERE 220, Phase 1 WOBC" oninput="updateNotesPreview()" />
+      <div class="tdy-field-separator"><span>Location</span></div>
+      <input type="text" id="awayLocation" placeholder="e.g. Dothan AL, Fort Knox KY" oninput="updateNotesPreview()" />
     </div>
 
     <label>Date Range</label>
@@ -358,7 +363,7 @@ const MONTHS_UPPER = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT
 
 const DEFAULT_PERSONNEL = [
   { rank:'CW2', last:'Carr', first:'Jonathon', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW3', last:'Kunkle', first:'Brandon', status:'leave', notes:'Leave 16-27MAR', from:'2026-03-16', to:'2026-03-27' },
+  { rank:'CW3', last:'Kunkle', first:'Brandon', status:'leave', notes:'', from:'2026-03-16', to:'2026-03-27' },
   { rank:'CW2', last:'Bennett', first:'Christopher', status:'present', notes:'', from:'', to:'' },
   { rank:'CW2', last:'Cabral', first:'Jeudy', status:'present', notes:'', from:'', to:'' },
   { rank:'CW2', last:'Carroll', first:'Hunter', status:'present', notes:'', from:'', to:'' },
@@ -368,21 +373,21 @@ const DEFAULT_PERSONNEL = [
   { rank:'CW2', last:'Funk', first:'Caleb', status:'present', notes:'', from:'', to:'' },
   { rank:'CW2', last:'Glossup', first:'Jaden', status:'present', notes:'', from:'', to:'' },
   { rank:'CW2', last:'Haertner', first:'Nicholas', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Hilts', first:'Brian', status:'tdy', notes:'TF Hunter 28Dec-28May', from:'2025-12-28', to:'2026-05-28' },
+  { rank:'CW2', last:'Hilts', first:'Brian', status:'tdy', notes:'TF Hunter', from:'2025-12-28', to:'2026-05-28' },
   { rank:'CW2', last:'May', first:'Kevin', status:'present', notes:'', from:'', to:'' },
   { rank:'CW2', last:'Michot', first:'Ryan A.', status:'present', notes:'', from:'', to:'' },
   { rank:'CW2', last:'Moenga', first:'Leslie', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Peart', first:'Sachin', status:'tdy', notes:'IPC 03MAR-09APR', from:'2026-03-03', to:'2026-04-09' },
-  { rank:'CW2', last:'Ren', first:'Norman', status:'tdy', notes:'TDY Phase 1 Dothan, 26FEB-28MAR', from:'2026-02-26', to:'2026-03-28' },
-  { rank:'CW2', last:'Smith', first:'Benjamin L.', status:'tdy', notes:'TDY Phase 1 Dothan, 26FEB-28MAR', from:'2026-02-26', to:'2026-03-28' },
+  { rank:'CW2', last:'Peart', first:'Sachin', status:'tdy', notes:'IPC', from:'2026-03-03', to:'2026-04-09' },
+  { rank:'CW2', last:'Ren', first:'Norman', status:'tdy', notes:'Phase 1 WOBC - Dothan AL', from:'2026-02-26', to:'2026-03-28' },
+  { rank:'CW2', last:'Smith', first:'Benjamin L.', status:'tdy', notes:'Phase 1 WOBC - Dothan AL', from:'2026-02-26', to:'2026-03-28' },
   { rank:'CW2', last:'Taylor', first:'Anthony M.', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Wood', first:'Albert', status:'tdy', notes:'TDY UC35 Orlando, FL 02MAR-03APR, leave next', from:'2026-03-02', to:'2026-04-03' },
+  { rank:'CW2', last:'Wood', first:'Albert', status:'tdy', notes:'UC35 - Orlando FL', from:'2026-03-02', to:'2026-04-03' },
   { rank:'CW2', last:'Torres', first:'Ricardo J.', status:'present', notes:'', from:'', to:'' },
   { rank:'WO1', last:'Harrington', first:'Brendan', status:'present', notes:'', from:'', to:'' },
   { rank:'WO1', last:'Morlan', first:'Evan', status:'present', notes:'', from:'', to:'' },
   { rank:'WO1', last:'Schilt', first:'Emmett', status:'present', notes:'', from:'', to:'' },
   { rank:'WO1', last:'White', first:'Kenneth J', status:'present', notes:'', from:'', to:'' },
-  { rank:'WO1', last:'Yaden', first:'Paul', status:'tdy', notes:'SERE 220 23-28 March 2026', from:'2026-03-23', to:'2026-03-28' },
+  { rank:'WO1', last:'Yaden', first:'Paul', status:'tdy', notes:'SERE 220', from:'2026-03-23', to:'2026-03-28' },
 ];
 
 let personnel = [];
@@ -727,20 +732,21 @@ function updateNotesPreview() {
   const statusLabels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
   let parts = [];
 
-  parts.push(statusLabels[awayStatus] || awayStatus);
-
   if (awayStatus === 'tdy') {
     const school = document.getElementById('awaySchool').value.trim();
+    const location = document.getElementById('awayLocation').value.trim();
     if (school) parts.push(school);
+    if (location) parts.push(location);
   }
 
   if (awayFrom || awayTo) {
     const fromStr = awayFrom ? formatDateShort(awayFrom) : '?';
     const toStr = awayTo ? formatDateShort(awayTo) : '?';
-    parts.push(`${fromStr}-${toStr}`);
+    parts.push(`${fromStr} - ${toStr}`);
   }
 
-  document.getElementById('notesPreview').textContent = parts.join(' | ');
+  const preview = parts.length ? parts.join(' | ') : (statusLabels[awayStatus] || awayStatus);
+  document.getElementById('notesPreview').textContent = preview;
 }
 
 // ─── TDY / Leave Modal ───
@@ -753,12 +759,19 @@ function openTdyLeave(i) {
   const status = (p.status === 'present') ? 'tdy' : p.status;
   setAwayStatus(status);
 
-  // Parse existing notes to try to extract school
+  // Restore school and location from notes (stored as "school - location")
   if (status === 'tdy' && p.notes) {
-    // Try to extract school from notes (everything before the date range part)
-    document.getElementById('awaySchool').value = p.notes;
+    const idx = p.notes.indexOf(' - ');
+    if (idx !== -1) {
+      document.getElementById('awaySchool').value = p.notes.slice(0, idx);
+      document.getElementById('awayLocation').value = p.notes.slice(idx + 3);
+    } else {
+      document.getElementById('awaySchool').value = p.notes;
+      document.getElementById('awayLocation').value = '';
+    }
   } else {
     document.getElementById('awaySchool').value = '';
+    document.getElementById('awayLocation').value = '';
   }
 
   awayFrom = p.from || '';
@@ -796,23 +809,17 @@ function saveTdyLeave() {
   p.from = awayFrom;
   p.to = awayTo;
 
-  // Build notes from sections
-  const statusLabels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
-  let parts = [];
-  parts.push(statusLabels[awayStatus]);
-
+  // Notes stores only descriptive text — status badge and dates render separately
   if (awayStatus === 'tdy') {
     const school = document.getElementById('awaySchool').value.trim();
+    const location = document.getElementById('awayLocation').value.trim();
+    const parts = [];
     if (school) parts.push(school);
+    if (location) parts.push(location);
+    p.notes = parts.join(' - ');
+  } else {
+    p.notes = '';
   }
-
-  if (awayFrom || awayTo) {
-    const fromStr = awayFrom ? formatDateShort(awayFrom) : '?';
-    const toStr = awayTo ? formatDateShort(awayTo) : '?';
-    parts.push(`${fromStr}-${toStr}`);
-  }
-
-  p.notes = parts.join(' | ');
 
   closeTdyLeaveModal();
   render();
