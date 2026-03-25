@@ -29,6 +29,8 @@
   .btn-edit:hover { background: #4a5568; }
   .btn-import { background: #00cec9; color: #fff; }
   .btn-import:hover { background: #00b5b1; }
+  .btn-reset { background: #636e72; color: #fff; }
+  .btn-reset:hover { background: #4a5568; }
   .tdy-field-separator { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
   .tdy-field-separator::before, .tdy-field-separator::after { content: ''; flex: 1; height: 1px; background: #3a3a55; }
   .tdy-field-separator span { font-size: 0.72em; color: #636e72; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -235,8 +237,8 @@
       font-size: 0.8em;
     }
 
-    /* Row number - hide */
-    .table-wrap table tbody tr td:nth-child(1) { display: none !important; }
+    /* Row number - hide (exclude section headers which only have one td) */
+    .table-wrap table tbody tr:not(.section-header):not(.section-header-tdy) td:nth-child(1) { display: none !important; }
     /* Rank - shrink */
     .table-wrap table tbody tr td:nth-child(2) { flex: 0 0 auto; }
     .rank-cell { font-size: 0.75em !important; }
@@ -305,7 +307,7 @@
 <div class="controls">
   <button class="btn-add" onclick="openAddModal()">+ Add Person</button>
   <button class="btn-import" onclick="openImportModal()">&#8595; Import List</button>
-  <button class="btn-danger" onclick="resetDay()">Reset Day</button>
+  <button class="btn-reset" onclick="resetDay()">Reset Day</button>
   <button class="btn-generate" onclick="generateReport()">Generate Report</button>
 </div>
 
