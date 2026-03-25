@@ -19,26 +19,12 @@
   .btn-generate:hover { background: #0770c2; }
   .btn-danger { background: #d63031; color: #fff; }
   .btn-danger:hover { background: #b71c1c; }
-  .btn-small { padding: 6px 12px; font-size: 0.85em; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+  .btn-small { padding: 10px 12px; font-size: 0.85em; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
   .btn-tdy-leave {
-    padding: 5px 12px; border: none; border-radius: 4px; cursor: pointer;
+    padding: 10px 12px; border: none; border-radius: 4px; cursor: pointer;
     font-weight: 600; font-size: 0.8em; background: #6c5ce7; color: #fff; transition: background 0.2s;
   }
   .btn-tdy-leave:hover { background: #5a4bd1; }
-  .btn-edit { background: #636e72; color: #fff; margin-right: 4px; }
-  .btn-edit:hover { background: #4a5568; }
-  .btn-import { background: #00cec9; color: #fff; }
-  .btn-import:hover { background: #00b5b1; }
-
-  /* Import modal */
-  .import-preview { margin-top: 10px; max-height: 200px; overflow-y: auto; }
-  .import-preview table { width: 100%; font-size: 0.85em; }
-  .import-preview td { padding: 3px 6px; border-bottom: 1px solid #3a3a55; }
-  .import-error { color: #e17055; font-size: 0.8em; margin-top: 4px; }
-  .import-hint { font-size: 0.78em; color: #636e72; margin-bottom: 8px; line-height: 1.5; }
-  .tdy-field-separator { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
-  .tdy-field-separator::before, .tdy-field-separator::after { content: ''; flex: 1; height: 1px; background: #3a3a55; }
-  .tdy-field-separator span { font-size: 0.72em; color: #636e72; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; }
 
   /* Modals */
   .modal-overlay {
@@ -87,11 +73,16 @@
   }
 
   .present-btn {
-    padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer;
+    padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer;
     font-weight: 600; font-size: 0.85em; transition: all 0.2s;
   }
   .present-btn.active { background: #00b894; color: #fff; }
   .present-btn.inactive { background: #555; color: #ccc; }
+  .present-btn.unaccounted { background: #e17055; color: #fff; animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
 
   .rank-cell { white-space: nowrap; font-weight: 600; color: #00d4ff; }
   .name-cell { white-space: nowrap; }
@@ -106,7 +97,6 @@
   .badge-tdy { background: #0984e3; color: #fff; }
   .badge-other { background: #e17055; color: #fff; }
   .badge-ftr { background: #d63031; color: #fff; }
-  .badge-unaccounted { background: #e67e22; color: #fff; }
 
   .returned-badge {
     display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.7em;
@@ -207,6 +197,86 @@
   .cal-day.range-start { background: #0984e3; color: #fff; font-weight: 700; border-radius: 4px 0 0 4px; }
   .cal-day.range-end { background: #0984e3; color: #fff; font-weight: 700; border-radius: 0 4px 4px 0; }
 
+  /* ─── Mobile responsive ─── */
+  @media (max-width: 640px) {
+    body { padding: 6px; }
+    .edit-unit-name { font-size: 1.1em; margin-bottom: 4px; }
+    .stats-bar { gap: 4px; padding: 6px 8px; margin-bottom: 8px; }
+    .stat .num { font-size: 1em; }
+    .stat .label { font-size: 0.6em; }
+    .controls { gap: 6px; margin-bottom: 10px; }
+    .controls button { padding: 8px 10px; font-size: 0.85em; flex: 1; min-width: 0; }
+
+    /* Convert table to card layout */
+    .table-wrap { overflow-x: visible; }
+    .table-wrap table { display: block; background: transparent; }
+    .table-wrap table thead { display: none; }
+    .table-wrap table tbody { display: block; }
+    .table-wrap table tbody tr {
+      display: flex !important; flex-wrap: nowrap; align-items: center; gap: 4px;
+      background: #2d2d44; border-radius: 6px; margin-bottom: 3px;
+      padding: 8px 8px; border: 1px solid #3a3a55; min-height: 44px;
+    }
+    .table-wrap table tbody tr:hover { background: #35355a; }
+    .table-wrap table tbody tr td {
+      display: block !important; padding: 0 !important; border: none !important;
+      font-size: 0.8em;
+    }
+
+    /* Row number - hide */
+    .table-wrap table tbody tr td:nth-child(1) { display: none !important; }
+    /* Rank - shrink */
+    .table-wrap table tbody tr td:nth-child(2) { flex: 0 0 auto; }
+    .rank-cell { font-size: 0.75em !important; }
+    /* Name - fill remaining space */
+    .table-wrap table tbody tr td:nth-child(3) { flex: 1 1 0 !important; min-width: 0; overflow: hidden; }
+    .name-cell { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; font-size: 0.8em !important; }
+    .away-notes { font-size: 0.7em !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .away-dates { font-size: 0.65em !important; }
+    /* Present btn */
+    .table-wrap table tbody tr td:nth-child(4) { flex: 0 0 auto; }
+    /* Status / TDY Leave btn */
+    .table-wrap table tbody tr td:nth-child(5) { flex: 0 0 auto; }
+    /* Remove btn */
+    .table-wrap table tbody tr td:nth-child(6) { flex: 0 0 auto; }
+
+    .present-btn { padding: 10px 10px; font-size: 0.75em; white-space: nowrap; }
+    .btn-tdy-leave { padding: 10px 8px; font-size: 0.7em; white-space: nowrap; }
+    .btn-small { padding: 10px 8px; font-size: 0.75em; }
+    .status-badge { padding: 1px 5px; font-size: 0.65em; }
+    .returned-badge { padding: 1px 5px; font-size: 0.6em; }
+
+    /* Section headers */
+    tr.section-header, tr.section-header-tdy {
+      display: block !important; padding: 6px 8px !important;
+      border-radius: 4px; margin-top: 8px; margin-bottom: 2px;
+    }
+    tr.section-header td, tr.section-header-tdy td {
+      padding: 0 !important; font-size: 0.8em;
+    }
+
+    /* Modal adjustments */
+    .modal { padding: 15px; width: 100%; max-width: 95vw; }
+    .modal-wide { width: 100%; }
+    .modal h2 { font-size: 1em; margin-bottom: 10px; }
+    .status-toggle-group { gap: 3px; }
+    .status-toggle { padding: 5px 8px; font-size: 0.75em; }
+    .date-pick-row { gap: 6px; }
+    .date-display { padding: 6px 4px; font-size: 0.8em; }
+    .cal-day { padding: 8px 2px; font-size: 0.85em; }
+    .cal-header button { padding: 5px 12px; }
+
+    .report-box { padding: 12px; }
+    .report-text { font-size: 0.7em; padding: 8px; }
+  }
+
+  @media (max-width: 380px) {
+    .stats-bar { gap: 2px; padding: 5px; }
+    .stat .num { font-size: 0.85em; }
+    .stat { min-width: 36px; }
+    .status-toggle { padding: 5px 8px; font-size: 0.75em; }
+  }
+
   /* Notes preview in modal */
   .notes-preview {
     background: #1a1a2e; border: 1px solid #333; border-radius: 5px; padding: 10px 12px;
@@ -222,7 +292,7 @@
 <div class="stats-bar" id="statsBar"></div>
 <div class="controls">
   <button class="btn-add" onclick="openAddModal()">+ Add Person</button>
-  <button class="btn-import" onclick="openImportModal()">&#8595; Import List</button>
+  <button class="btn-danger" onclick="resetDay()">Reset Day</button>
   <button class="btn-generate" onclick="generateReport()">Generate Report</button>
 </div>
 
@@ -242,7 +312,7 @@
   </table>
 </div>
 
-<!-- Add / Edit Person Modal -->
+<!-- Add Person Modal -->
 <div class="modal-overlay" id="addModal">
   <div class="modal">
     <h2 id="modalTitle">Add Person</h2>
@@ -261,29 +331,7 @@
     <input type="text" id="addFirst" placeholder="e.g. John" />
     <div class="modal-buttons">
       <button class="btn-small btn-danger" onclick="closeAddModal()">Cancel</button>
-      <button class="btn-small btn-add" id="savePersonBtn" onclick="savePerson()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal modal-wide">
-    <h2>Import Personnel List</h2>
-    <p class="import-hint">
-      Paste one person per line. Accepted formats:<br>
-      &nbsp;&bull; <code>RANK Last, First</code> &nbsp;(e.g. <em>CW2 Smith, John</em>)<br>
-      &nbsp;&bull; <code>RANK Last First</code> &nbsp;(e.g. <em>WO1 Doe Jane</em>)
-    </p>
-    <label>Paste list</label>
-    <textarea id="importText" rows="8" placeholder="CW2 Smith, John&#10;WO1 Doe, Jane&#10;SGT Jones, Mike" oninput="previewImport()"></textarea>
-    <div id="importPreviewWrap" class="import-preview" style="display:none">
-      <div id="importError" class="import-error"></div>
-      <table id="importPreviewTable"></table>
-    </div>
-    <div class="modal-buttons">
-      <button class="btn-small btn-danger" onclick="closeImportModal()">Cancel</button>
-      <button class="btn-small btn-add" id="confirmImportBtn" onclick="confirmImport()" disabled>Add to Roster</button>
+      <button class="btn-small btn-add" onclick="savePerson()">Save</button>
     </div>
   </div>
 </div>
@@ -303,10 +351,8 @@
     </div>
 
     <div class="tdy-school-row" id="tdySchoolRow">
-      <label>School / Course</label>
-      <input type="text" id="awaySchool" placeholder="e.g. IPC, SERE 220, Phase 1 WOBC" oninput="updateNotesPreview()" />
-      <div class="tdy-field-separator"><span>Location</span></div>
-      <input type="text" id="awayLocation" placeholder="e.g. Dothan AL, Fort Knox KY" oninput="updateNotesPreview()" />
+      <label>School / Location</label>
+      <input type="text" id="awaySchool" placeholder="e.g. Phase 1 Dothan, IPC, SERE 220" />
     </div>
 
     <label>Date Range</label>
@@ -361,60 +407,59 @@ const RANK_ORDER = [
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_UPPER = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
-const DEFAULT_PERSONNEL = [
-  { rank:'CW2', last:'Carr', first:'Jonathon', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW3', last:'Kunkle', first:'Brandon', status:'leave', notes:'', from:'2026-03-16', to:'2026-03-27' },
-  { rank:'CW2', last:'Bennett', first:'Christopher', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Cabral', first:'Jeudy', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Carroll', first:'Hunter', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Dunn', first:'Aaron J.', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Federman', first:'Simon', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Fry', first:'Zachary', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Funk', first:'Caleb', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Glossup', first:'Jaden', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Haertner', first:'Nicholas', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Hilts', first:'Brian', status:'tdy', notes:'TF Hunter', from:'2025-12-28', to:'2026-05-28' },
-  { rank:'CW2', last:'May', first:'Kevin', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Michot', first:'Ryan A.', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Moenga', first:'Leslie', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Peart', first:'Sachin', status:'tdy', notes:'IPC', from:'2026-03-03', to:'2026-04-09' },
-  { rank:'CW2', last:'Ren', first:'Norman', status:'tdy', notes:'Phase 1 WOBC - Dothan AL', from:'2026-02-26', to:'2026-03-28' },
-  { rank:'CW2', last:'Smith', first:'Benjamin L.', status:'tdy', notes:'Phase 1 WOBC - Dothan AL', from:'2026-02-26', to:'2026-03-28' },
-  { rank:'CW2', last:'Taylor', first:'Anthony M.', status:'present', notes:'', from:'', to:'' },
-  { rank:'CW2', last:'Wood', first:'Albert', status:'tdy', notes:'UC35 - Orlando FL', from:'2026-03-02', to:'2026-04-03' },
-  { rank:'CW2', last:'Torres', first:'Ricardo J.', status:'present', notes:'', from:'', to:'' },
-  { rank:'WO1', last:'Harrington', first:'Brendan', status:'present', notes:'', from:'', to:'' },
-  { rank:'WO1', last:'Morlan', first:'Evan', status:'present', notes:'', from:'', to:'' },
-  { rank:'WO1', last:'Schilt', first:'Emmett', status:'present', notes:'', from:'', to:'' },
-  { rank:'WO1', last:'White', first:'Kenneth J', status:'present', notes:'', from:'', to:'' },
-  { rank:'WO1', last:'Yaden', first:'Paul', status:'tdy', notes:'SERE 220', from:'2026-03-23', to:'2026-03-28' },
-];
-
 let personnel = [];
 let tdyLeaveIndex = -1;
-let editIndex = -1;
 
 // Calendar state
-let calYear, calMonth; // currently displayed month
-let calTarget = ''; // 'from' or 'to'
+let calYear, calMonth;
+let calTarget = '';
 let awayFrom = '', awayTo = '';
 let awayStatus = 'tdy';
 
-function load() {
-  const saved = localStorage.getItem('accountability_personnel');
-  const savedUnit = localStorage.getItem('accountability_unit_name');
-  if (saved) {
-    personnel = JSON.parse(saved);
-  } else {
-    personnel = JSON.parse(JSON.stringify(DEFAULT_PERSONNEL));
-  }
-  if (savedUnit) document.getElementById('unitName').value = savedUnit;
-  render();
+// ─── API helpers ───
+const API = '/api';
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  return res.json();
 }
 
-function save() {
-  localStorage.setItem('accountability_personnel', JSON.stringify(personnel));
-  localStorage.setItem('accountability_unit_name', document.getElementById('unitName').value);
+async function load() {
+  try {
+    const [data, settings] = await Promise.all([
+      api('GET', '/personnel'),
+      api('GET', '/settings')
+    ]);
+    // Map DB fields to frontend fields
+    personnel = data.map(p => ({
+      id: p.id, rank: p.rank, last: p.last, first: p.first,
+      status: p.status, notes: p.notes || '',
+      from: p.from_date || '', to: p.to_date || '',
+      present_date: p.present_date || ''
+    }));
+    if (settings.unit_name) {
+      document.getElementById('unitName').value = settings.unit_name;
+    }
+    render();
+  } catch (e) {
+    console.error('Failed to load from API:', e);
+  }
+}
+
+async function saveUnit() {
+  const name = document.getElementById('unitName').value;
+  await api('PUT', '/settings', { unit_name: name });
+}
+
+async function apiUpdate(p) {
+  await api('PUT', `/personnel/${p.id}`, {
+    rank: p.rank, last: p.last, first: p.first,
+    status: p.status, notes: p.notes,
+    from_date: p.from, to_date: p.to,
+    present_date: p.present_date || ''
+  });
 }
 
 function rankSort(a, b) {
@@ -433,6 +478,25 @@ function endDateSort(a, b) {
 
 function isAway(p) { return p.status !== 'present'; }
 
+function isInActiveWindow(p) {
+  // Person is in an active leave/tdy/pass window if today falls within their date range
+  if (p.status === 'present') return false;
+  const today = getTodayStr();
+  if (p.from && p.to) return today >= p.from && today <= p.to;
+  if (p.from) return today >= p.from;
+  if (p.to) return today <= p.to;
+  return true; // no dates set, treat as active
+}
+
+function isPresentToday(p) {
+  return p.status === 'present' && p.present_date === getTodayStr();
+}
+
+function isUnaccounted(p) {
+  // Present status but not marked present today
+  return p.status === 'present' && p.present_date !== getTodayStr();
+}
+
 function formatDateShort(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
@@ -446,7 +510,7 @@ function formatDateDisplay(dateStr) {
 }
 
 function statusBadge(status) {
-  const labels = { leave:'Leave', pass:'Pass', tdy:'TDY', other:'Other', ftr:'FTR', unaccounted:'Unaccounted' };
+  const labels = { leave:'Leave', pass:'Pass', tdy:'TDY', other:'Other', ftr:'FTR' };
   return `<span class="status-badge badge-${status}">${labels[status] || status}</span>`;
 }
 
@@ -468,21 +532,57 @@ function render() {
       p.from = '';
       p.to = '';
       recentlyReturned.add(p);
+      // Persist auto-return to DB
+      apiUpdate(p);
     }
   });
 
-  const presentList = personnel.filter(p => !isAway(p)).sort(rankSort);
+  const unaccountedList = personnel.filter(p => isUnaccounted(p)).sort(rankSort);
+  const presentList = personnel.filter(p => isPresentToday(p)).sort(rankSort);
   const leaveList = personnel.filter(p => p.status === 'leave' || p.status === 'pass').sort(endDateSort);
   const tdyList = personnel.filter(p => p.status === 'tdy').sort(endDateSort);
   const otherList = personnel.filter(p => p.status === 'other' || p.status === 'ftr').sort(endDateSort);
-  const unaccountedList = personnel.filter(p => p.status === 'unaccounted').sort(rankSort);
   const body = document.getElementById('personnelBody');
   body.innerHTML = '';
 
-  let counts = { present:0, leave:0, pass:0, tdy:0, other:0, ftr:0 };
-  personnel.forEach(p => { counts[p.status] = (counts[p.status] || 0) + 1; });
+  let counts = { present:0, unaccounted:0, leave:0, pass:0, tdy:0, other:0, ftr:0 };
+  personnel.forEach(p => {
+    if (isUnaccounted(p)) { counts.unaccounted++; }
+    else { counts[p.status] = (counts[p.status] || 0) + 1; }
+  });
 
   let rowNum = 1;
+
+  // Unaccounted section (need to be marked present)
+  if (unaccountedList.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'section-header';
+    sep.innerHTML = `<td colspan="6" style="color:#e17055;border-color:#e17055;">NOT YET ACCOUNTED FOR (${unaccountedList.length})</td>`;
+    body.appendChild(sep);
+
+    unaccountedList.forEach(p => {
+      const i = personnel.indexOf(p);
+      const returnedBadge = recentlyReturned.has(p) ? `<span class="returned-badge">RETURNED</span>` : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${rowNum++}</td>
+        <td class="rank-cell">${p.rank}</td>
+        <td class="name-cell">${p.last}, ${p.first}${returnedBadge}</td>
+        <td><button class="present-btn unaccounted" onclick="markPresentToday(${i})">&#9675; Mark Present</button></td>
+        <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
+        <td><button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  // Present today section
+  if (presentList.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'section-header';
+    sep.innerHTML = `<td colspan="6" style="color:#00b894;border-color:#00b894;">PRESENT FOR DUTY (${presentList.length})</td>`;
+    body.appendChild(sep);
+  }
 
   presentList.forEach(p => {
     const i = personnel.indexOf(p);
@@ -492,12 +592,9 @@ function render() {
       <td>${rowNum++}</td>
       <td class="rank-cell">${p.rank}</td>
       <td class="name-cell">${p.last}, ${p.first}${returnedBadge}</td>
-      <td><button class="present-btn active">&#10003; Present</button></td>
+      <td><button class="present-btn active" onclick="unmarkPresent(${i})">&#10003; Present</button></td>
       <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
-      <td>
-        <button class="btn-small btn-edit" onclick="openEditModal(${i})" title="Edit">&#9998;</button>
-        <button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button>
-      </td>
+      <td><button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
     `;
     body.appendChild(tr);
   });
@@ -520,15 +617,6 @@ function render() {
     tdyList.forEach(p => { body.appendChild(buildAwayRow(p, rowNum++)); });
   }
 
-  // Unaccounted section (imported but not yet verified)
-  if (unaccountedList.length) {
-    const sep = document.createElement('tr');
-    sep.className = 'section-header';
-    sep.innerHTML = `<td colspan="6" style="color:#e67e22;border-color:#e67e22;">&#9888; UNACCOUNTED (${unaccountedList.length}) &nbsp; <span style="font-size:0.75em;font-weight:400;color:#b2bec3;">Mark Present or assign a status</span></td>`;
-    body.appendChild(sep);
-    unaccountedList.forEach(p => { body.appendChild(buildAwayRow(p, rowNum++)); });
-  }
-
   // Other / FTR section
   if (otherList.length) {
     const sep = document.createElement('tr');
@@ -542,14 +630,13 @@ function render() {
   const leavePass = (counts.leave || 0) + (counts.pass || 0);
   document.getElementById('statsBar').innerHTML = `
     <div class="stat"><div class="num">${total}</div><div class="label">Assigned</div></div>
+    <div class="stat"><div class="num" style="color:${counts.unaccounted ? '#e17055' : '#888'}">${counts.unaccounted}</div><div class="label">Unaccounted</div></div>
     <div class="stat"><div class="num" style="color:#00b894">${counts.present}</div><div class="label">Present</div></div>
     <div class="stat"><div class="num" style="color:#fdcb6e">${leavePass}</div><div class="label">Leave/Pass</div></div>
     <div class="stat"><div class="num" style="color:#74b9ff">${counts.tdy}</div><div class="label">TDY</div></div>
     <div class="stat"><div class="num" style="color:#e17055">${counts.other}</div><div class="label">Other</div></div>
     <div class="stat"><div class="num" style="color:#d63031">${counts.ftr}</div><div class="label">FTR</div></div>
-    ${counts.unaccounted ? `<div class="stat"><div class="num" style="color:#e67e22">${counts.unaccounted}</div><div class="label">Unaccounted</div></div>` : ''}
   `;
-  save();
 }
 
 function getTodayStr() {
@@ -574,24 +661,53 @@ function buildAwayRow(p, rowNum) {
       ${statusBadge(p.status)}
       <button class="btn-tdy-leave" onclick="openTdyLeave(${i})" style="margin-left:6px;">Edit</button>
     </td>
-    <td>
-      <button class="btn-small btn-edit" onclick="openEditModal(${i})" title="Edit">&#9998;</button>
-      <button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button>
-    </td>
+    <td><button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
   `;
   return tr;
 }
 
-function markPresent(i) {
-  personnel[i].status = 'present';
-  personnel[i].notes = '';
-  personnel[i].from = '';
-  personnel[i].to = '';
+async function markPresentToday(i) {
+  const p = personnel[i];
+  p.present_date = getTodayStr();
+  await apiUpdate(p);
   render();
 }
 
-function removePerson(i) {
-  if (confirm(`Remove ${personnel[i].rank} ${personnel[i].last}, ${personnel[i].first}?`)) {
+async function unmarkPresent(i) {
+  const p = personnel[i];
+  p.present_date = '';
+  await apiUpdate(p);
+  render();
+}
+
+async function markPresent(i) {
+  const p = personnel[i];
+  p.status = 'present';
+  p.notes = '';
+  p.from = '';
+  p.to = '';
+  p.present_date = getTodayStr();
+  await apiUpdate(p);
+  render();
+}
+
+async function resetDay() {
+  if (!confirm('Reset all present statuses? Everyone will need to be marked present again.')) return;
+  const updates = [];
+  personnel.forEach(p => {
+    if (p.status === 'present') {
+      p.present_date = '';
+      updates.push(apiUpdate(p));
+    }
+  });
+  await Promise.all(updates);
+  render();
+}
+
+async function removePerson(i) {
+  const p = personnel[i];
+  if (confirm(`Remove ${p.rank} ${p.last}, ${p.first}?`)) {
+    await api('DELETE', `/personnel/${p.id}`);
     personnel.splice(i, 1);
     render();
   }
@@ -732,21 +848,20 @@ function updateNotesPreview() {
   const statusLabels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
   let parts = [];
 
+  parts.push(statusLabels[awayStatus] || awayStatus);
+
   if (awayStatus === 'tdy') {
     const school = document.getElementById('awaySchool').value.trim();
-    const location = document.getElementById('awayLocation').value.trim();
     if (school) parts.push(school);
-    if (location) parts.push(location);
   }
 
   if (awayFrom || awayTo) {
     const fromStr = awayFrom ? formatDateShort(awayFrom) : '?';
     const toStr = awayTo ? formatDateShort(awayTo) : '?';
-    parts.push(`${fromStr} - ${toStr}`);
+    parts.push(`${fromStr}-${toStr}`);
   }
 
-  const preview = parts.length ? parts.join(' | ') : (statusLabels[awayStatus] || awayStatus);
-  document.getElementById('notesPreview').textContent = preview;
+  document.getElementById('notesPreview').textContent = parts.join(' | ');
 }
 
 // ─── TDY / Leave Modal ───
@@ -759,19 +874,12 @@ function openTdyLeave(i) {
   const status = (p.status === 'present') ? 'tdy' : p.status;
   setAwayStatus(status);
 
-  // Restore school and location from notes (stored as "school - location")
+  // Parse existing notes to try to extract school
   if (status === 'tdy' && p.notes) {
-    const idx = p.notes.indexOf(' - ');
-    if (idx !== -1) {
-      document.getElementById('awaySchool').value = p.notes.slice(0, idx);
-      document.getElementById('awayLocation').value = p.notes.slice(idx + 3);
-    } else {
-      document.getElementById('awaySchool').value = p.notes;
-      document.getElementById('awayLocation').value = '';
-    }
+    // Try to extract school from notes (everything before the date range part)
+    document.getElementById('awaySchool').value = p.notes;
   } else {
     document.getElementById('awaySchool').value = '';
-    document.getElementById('awayLocation').value = '';
   }
 
   awayFrom = p.from || '';
@@ -801,7 +909,7 @@ function closeTdyLeaveModal() {
   tdyLeaveIndex = -1;
 }
 
-function saveTdyLeave() {
+async function saveTdyLeave() {
   if (tdyLeaveIndex < 0) return;
   const p = personnel[tdyLeaveIndex];
 
@@ -809,18 +917,25 @@ function saveTdyLeave() {
   p.from = awayFrom;
   p.to = awayTo;
 
-  // Notes stores only descriptive text — status badge and dates render separately
+  // Build notes from sections
+  const statusLabels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
+  let parts = [];
+  parts.push(statusLabels[awayStatus]);
+
   if (awayStatus === 'tdy') {
     const school = document.getElementById('awaySchool').value.trim();
-    const location = document.getElementById('awayLocation').value.trim();
-    const parts = [];
     if (school) parts.push(school);
-    if (location) parts.push(location);
-    p.notes = parts.join(' - ');
-  } else {
-    p.notes = '';
   }
 
+  if (awayFrom || awayTo) {
+    const fromStr = awayFrom ? formatDateShort(awayFrom) : '?';
+    const toStr = awayTo ? formatDateShort(awayTo) : '?';
+    parts.push(`${fromStr}-${toStr}`);
+  }
+
+  p.notes = parts.join(' | ');
+
+  await apiUpdate(p);
   closeTdyLeaveModal();
   render();
 }
@@ -828,140 +943,29 @@ function saveTdyLeave() {
 // Listen for school input changes
 document.getElementById('awaySchool').addEventListener('input', updateNotesPreview);
 
-// ─── Add / Edit Person Modal ───
+// ─── Add Person Modal ───
 function openAddModal() {
-  editIndex = -1;
   document.getElementById('modalTitle').textContent = 'Add Person';
-  document.getElementById('savePersonBtn').textContent = 'Save';
   document.getElementById('addRank').value = 'CW2';
   document.getElementById('addLast').value = '';
   document.getElementById('addFirst').value = '';
   document.getElementById('addModal').classList.add('active');
   document.getElementById('addLast').focus();
 }
-
-function openEditModal(i) {
-  editIndex = i;
-  const p = personnel[i];
-  document.getElementById('modalTitle').textContent = 'Edit Person';
-  document.getElementById('savePersonBtn').textContent = 'Update';
-  document.getElementById('addRank').value = p.rank;
-  document.getElementById('addLast').value = p.last;
-  document.getElementById('addFirst').value = p.first;
-  document.getElementById('addModal').classList.add('active');
-  document.getElementById('addLast').focus();
-}
-
-function closeAddModal() {
-  document.getElementById('addModal').classList.remove('active');
-  editIndex = -1;
-}
-
-function savePerson() {
+function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+async function savePerson() {
   const rank = document.getElementById('addRank').value;
   const last = document.getElementById('addLast').value.trim();
   const first = document.getElementById('addFirst').value.trim();
   if (!last || !first) { alert('Please enter both first and last name.'); return; }
-  if (editIndex >= 0) {
-    personnel[editIndex].rank = rank;
-    personnel[editIndex].last = last;
-    personnel[editIndex].first = first;
-  } else {
-    personnel.push({ rank, last, first, status:'present', notes:'', from:'', to:'' });
-  }
+  const newPerson = await api('POST', '/personnel', { rank, last, first });
+  personnel.push({
+    id: newPerson.id, rank: newPerson.rank, last: newPerson.last, first: newPerson.first,
+    status: newPerson.status, notes: newPerson.notes || '',
+    from: newPerson.from_date || '', to: newPerson.to_date || '',
+    present_date: newPerson.present_date || ''
+  });
   closeAddModal();
-  render();
-}
-
-// ─── Import Modal ───
-function openImportModal() {
-  document.getElementById('importText').value = '';
-  document.getElementById('importPreviewWrap').style.display = 'none';
-  document.getElementById('confirmImportBtn').disabled = true;
-  document.getElementById('importModal').classList.add('active');
-  document.getElementById('importText').focus();
-}
-
-function closeImportModal() {
-  document.getElementById('importModal').classList.remove('active');
-}
-
-function parseImportLine(line) {
-  line = line.trim();
-  if (!line) return null;
-
-  // Try: RANK Last, First  (e.g. "CW2 Smith, John")
-  let m = line.match(/^([A-Z0-9]+)\s+([^,]+),\s*(.+)$/);
-  if (m) {
-    const rank = m[1].trim();
-    const last = m[2].trim();
-    const first = m[3].trim();
-    if (RANK_ORDER.includes(rank) && last && first) return { rank, last, first };
-  }
-
-  // Try: RANK Last First  (e.g. "CW2 Smith John" or "WO1 Smith John Allen")
-  m = line.match(/^([A-Z0-9]+)\s+(\S+)\s+(.+)$/);
-  if (m) {
-    const rank = m[1].trim();
-    const last = m[2].trim();
-    const first = m[3].trim();
-    if (RANK_ORDER.includes(rank) && last && first) return { rank, last, first };
-  }
-
-  return null;
-}
-
-function previewImport() {
-  const text = document.getElementById('importText').value;
-  const lines = text.split('\n');
-  const parsed = [];
-  const errors = [];
-
-  lines.forEach((line, idx) => {
-    if (!line.trim()) return;
-    const result = parseImportLine(line);
-    if (result) {
-      parsed.push(result);
-    } else {
-      errors.push(`Line ${idx + 1}: "${line.trim()}"`);
-    }
-  });
-
-  const wrap = document.getElementById('importPreviewWrap');
-  const errEl = document.getElementById('importError');
-  const table = document.getElementById('importPreviewTable');
-  const btn = document.getElementById('confirmImportBtn');
-
-  if (parsed.length === 0 && errors.length === 0) {
-    wrap.style.display = 'none';
-    btn.disabled = true;
-    return;
-  }
-
-  wrap.style.display = 'block';
-  errEl.textContent = errors.length ? `Could not parse ${errors.length} line(s): ${errors.join('; ')}` : '';
-
-  table.innerHTML = parsed.length
-    ? '<tr><th style="text-align:left;padding:3px 6px;color:#aaa">Rank</th><th style="text-align:left;padding:3px 6px;color:#aaa">Name</th></tr>'
-      + parsed.map(p => `<tr><td>${p.rank}</td><td>${p.last}, ${p.first}</td></tr>`).join('')
-    : '';
-
-  btn.disabled = parsed.length === 0;
-  btn.textContent = `Add ${parsed.length} to Roster`;
-}
-
-function confirmImport() {
-  const text = document.getElementById('importText').value;
-  const lines = text.split('\n');
-  let added = 0;
-  lines.forEach(line => {
-    const result = parseImportLine(line);
-    if (result) {
-      personnel.push({ rank: result.rank, last: result.last, first: result.first, status: 'unaccounted', notes: '', from: '', to: '' });
-      added++;
-    }
-  });
-  closeImportModal();
   render();
 }
 
@@ -971,15 +975,22 @@ function formatDate(d) {
 }
 
 function generateReport() {
+  // Check for unaccounted personnel
+  const unaccounted = personnel.filter(p => isUnaccounted(p));
+  if (unaccounted.length > 0) {
+    const names = unaccounted.map(p => `${p.rank} ${p.last}, ${p.first}`).join('\n');
+    alert(`Cannot generate report — ${unaccounted.length} personnel still unaccounted for:\n\n${names}`);
+    return;
+  }
+
   const unitName = document.getElementById('unitName').value || '2nd Platoon Accountability';
   const today = formatDate(new Date());
 
-  const present = personnel.filter(p => p.status === 'present').sort(rankSort);
+  const present = personnel.filter(p => isPresentToday(p)).sort(rankSort);
   const leave = personnel.filter(p => p.status === 'leave' || p.status === 'pass').sort(endDateSort);
   const tdy = personnel.filter(p => p.status === 'tdy').sort(endDateSort);
   const other = personnel.filter(p => p.status === 'other').sort(endDateSort);
   const ftr = personnel.filter(p => p.status === 'ftr').sort(endDateSort);
-  const unaccounted = personnel.filter(p => p.status === 'unaccounted').sort(rankSort);
 
   let lines = [];
   lines.push(unitName);
@@ -1030,12 +1041,6 @@ function generateReport() {
     });
   }
 
-  if (unaccounted.length) {
-    lines.push('');
-    lines.push(`UNACCOUNTED ${unaccounted.length}`);
-    unaccounted.forEach(p => lines.push(`${p.rank.padEnd(5)} ${p.last}, ${p.first}`));
-  }
-
   document.getElementById('reportText').textContent = lines.join('\n');
   document.getElementById('reportModal').classList.add('active');
 }
@@ -1074,9 +1079,12 @@ function fallbackCopy(text, btn) {
 function closeReport() { document.getElementById('reportModal').classList.remove('active'); }
 
 // ─── Event Listeners ───
-document.getElementById('unitName').addEventListener('input', save);
+let unitNameTimer;
+document.getElementById('unitName').addEventListener('input', () => {
+  clearTimeout(unitNameTimer);
+  unitNameTimer = setTimeout(saveUnit, 500);
+});
 document.getElementById('addModal').addEventListener('click', function(e) { if (e.target === this) closeAddModal(); });
-document.getElementById('importModal').addEventListener('click', function(e) { if (e.target === this) closeImportModal(); });
 document.getElementById('tdyLeaveModal').addEventListener('click', function(e) { if (e.target === this) closeTdyLeaveModal(); });
 document.getElementById('reportModal').addEventListener('click', function(e) { if (e.target === this) closeReport(); });
 document.getElementById('addFirst').addEventListener('keydown', function(e) { if (e.key === 'Enter') savePerson(); });
