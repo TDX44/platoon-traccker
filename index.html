@@ -377,6 +377,7 @@
 <div id="homeScreen">
   <div class="home-actions">
     <button class="btn-manage-users" id="manageUsersBtn" onclick="openUserMgmt()" style="display:none">&#9881; Users</button>
+    <button class="btn-manage-users" onclick="openChangePwModal()">&#128273; Change Password</button>
     <button class="btn-logout" onclick="doLogout()">Sign Out</button>
   </div>
   <div class="home-title">Platoon Accountability</div>
@@ -533,6 +534,25 @@
     <div class="report-buttons">
       <button class="btn-small btn-generate" onclick="copyReport()">Copy to Clipboard</button>
       <button class="btn-small btn-danger" onclick="closeReport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="changePwModal">
+  <div class="modal">
+    <h2>Change Password</h2>
+    <label>Current Password</label>
+    <input type="password" id="cpCurrent" placeholder="Current password" autocomplete="current-password" />
+    <label>New Password</label>
+    <input type="password" id="cpNew" placeholder="New password (min 6 chars)" autocomplete="new-password" />
+    <label>Confirm New Password</label>
+    <input type="password" id="cpConfirm" placeholder="Confirm new password" autocomplete="new-password" />
+    <div id="cpError" class="login-error" style="display:none"></div>
+    <div id="cpSuccess" style="display:none;background:#00b89422;border:1px solid #00b894;color:#00b894;padding:8px 12px;border-radius:5px;font-size:0.85em;margin-bottom:12px;"></div>
+    <div class="modal-buttons">
+      <button class="btn-small btn-danger" onclick="closeChangePwModal()">Cancel</button>
+      <button class="btn-small btn-add" onclick="submitChangePw()">Save</button>
     </div>
   </div>
 </div>
@@ -1614,10 +1634,58 @@ async function deleteUser(userId, username) {
   await refreshUserList();
 }
 
+// ─── Change Password ───
+function openChangePwModal() {
+  document.getElementById('cpCurrent').value = '';
+  document.getElementById('cpNew').value = '';
+  document.getElementById('cpConfirm').value = '';
+  document.getElementById('cpError').style.display = 'none';
+  document.getElementById('cpSuccess').style.display = 'none';
+  document.getElementById('changePwModal').classList.add('active');
+  document.getElementById('cpCurrent').focus();
+}
+
+function closeChangePwModal() {
+  document.getElementById('changePwModal').classList.remove('active');
+}
+
+async function submitChangePw() {
+  const current = document.getElementById('cpCurrent').value;
+  const newPw = document.getElementById('cpNew').value;
+  const confirm = document.getElementById('cpConfirm').value;
+  const errEl = document.getElementById('cpError');
+  const okEl = document.getElementById('cpSuccess');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+
+  if (!current || !newPw || !confirm) {
+    errEl.textContent = 'All fields are required.'; errEl.style.display = 'block'; return;
+  }
+  if (newPw !== confirm) {
+    errEl.textContent = 'New passwords do not match.'; errEl.style.display = 'block'; return;
+  }
+  if (newPw.length < 6) {
+    errEl.textContent = 'New password must be at least 6 characters.'; errEl.style.display = 'block'; return;
+  }
+
+  const result = await api('PUT', '/me/password', { current_password: current, new_password: newPw });
+  if (!result) return;
+  if (result.error) {
+    errEl.textContent = result.error; errEl.style.display = 'block'; return;
+  }
+  okEl.textContent = 'Password changed successfully!';
+  okEl.style.display = 'block';
+  document.getElementById('cpCurrent').value = '';
+  document.getElementById('cpNew').value = '';
+  document.getElementById('cpConfirm').value = '';
+  setTimeout(closeChangePwModal, 1500);
+}
+
 // ─── Init ───
 document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('userMgmtModal').addEventListener('click', function(e) { if (e.target === this) closeUserMgmt(); });
 document.getElementById('userEditModal').addEventListener('click', function(e) { if (e.target === this) closeUserEdit(); });
+document.getElementById('changePwModal').addEventListener('click', function(e) { if (e.target === this) closeChangePwModal(); });
 
 window.addEventListener('popstate', () => {
   const p = new URLSearchParams(window.location.search).get('platoon');
