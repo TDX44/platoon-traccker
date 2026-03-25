@@ -76,12 +76,14 @@ def init_db():
             'INSERT INTO users (username, password_hash, is_admin, platoons) VALUES (?, ?, 1, ?)',
             ('admin', generate_password_hash(password), '*')
         )
-        print(f'\n{"=" * 52}')
-        print(f'  First-run admin account created')
-        print(f'  Username : admin')
-        print(f'  Password : {password}')
-        print(f'  Change this password after first login!')
-        print(f'{"=" * 52}\n')
+        import sys
+        sys.stderr.write(f'\n{"=" * 52}\n')
+        sys.stderr.write(f'  First-run admin account created\n')
+        sys.stderr.write(f'  Username : admin\n')
+        sys.stderr.write(f'  Password : {password}\n')
+        sys.stderr.write(f'  Change this password after first login!\n')
+        sys.stderr.write(f'{"=" * 52}\n\n')
+        sys.stderr.flush()
 
     # ── Seed 2nd Platoon ──
     cur.execute('SELECT COUNT(*) FROM personnel WHERE platoon = "2nd"')
