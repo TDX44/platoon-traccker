@@ -667,43 +667,6 @@
   </div>
 </div>
 
-<!-- User Management Modal -->
-<div class="modal-overlay" id="userMgmtModal">
-  <div class="modal modal-wide">
-    <h2>Manage Users</h2>
-    <div id="userListWrap" style="max-height:320px;overflow-y:auto;margin-bottom:16px;min-height:60px;"></div>
-    <div class="modal-buttons">
-      <button class="btn-small btn-add" onclick="openUserEditModal(null)">+ Add User</button>
-      <button class="btn-small btn-danger" onclick="closeUserMgmt()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Add / Edit User Modal -->
-<div class="modal-overlay" id="userEditModal">
-  <div class="modal">
-    <h2 id="userEditTitle">Add User</h2>
-    <label>Username</label>
-    <input type="text" id="userEditUsername" placeholder="Username" autocomplete="off" />
-    <label id="userEditPwLabel">Password</label>
-    <input type="password" id="userEditPassword" placeholder="Password" autocomplete="new-password" />
-    <label>Platoon Access</label>
-    <div class="platoon-checks">
-      <label><input type="checkbox" id="chk1st" /> 1st Platoon</label>
-      <label><input type="checkbox" id="chk2nd" /> 2nd Platoon</label>
-      <label><input type="checkbox" id="chkHq"  /> HQ Platoon</label>
-    </div>
-    <label class="admin-check-label">
-      <input type="checkbox" id="userEditAdmin" onchange="toggleAdminCheck()" />
-      Administrator (all platoons + user management)
-    </label>
-    <div id="userEditError" class="login-error" style="display:none"></div>
-    <div class="modal-buttons">
-      <button class="btn-small btn-danger" onclick="closeUserEdit()">Cancel</button>
-      <button class="btn-small btn-add" onclick="saveUserEdit()">Save</button>
-    </div>
-  </div>
-</div>
 
 <!-- Report History Modal -->
 <div class="modal-overlay" id="historyModal">
@@ -2109,6 +2072,44 @@ initApp();
 </script>
 
 </div><!-- end #platoonScreen -->
+
+<!-- User Management Modal (global — works from any screen) -->
+<div class="modal-overlay" id="userMgmtModal">
+  <div class="modal modal-wide">
+    <h2>Manage Users</h2>
+    <div id="userListWrap" style="max-height:320px;overflow-y:auto;margin-bottom:16px;min-height:60px;"></div>
+    <div class="modal-buttons">
+      <button class="btn-small btn-add" onclick="openUserEditModal(null)">+ Add User</button>
+      <button class="btn-small btn-danger" onclick="closeUserMgmt()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit User Modal (global — works from any screen) -->
+<div class="modal-overlay" id="userEditModal">
+  <div class="modal">
+    <h2 id="userEditTitle">Add User</h2>
+    <label>Username</label>
+    <input type="text" id="userEditUsername" placeholder="Username" autocomplete="off" />
+    <label id="userEditPwLabel">Password</label>
+    <input type="password" id="userEditPassword" placeholder="Password" autocomplete="new-password" />
+    <label>Platoon Access</label>
+    <div class="platoon-checks">
+      <label><input type="checkbox" id="chk1st" /> 1st Platoon</label>
+      <label><input type="checkbox" id="chk2nd" /> 2nd Platoon</label>
+      <label><input type="checkbox" id="chkHq"  /> HQ Platoon</label>
+    </div>
+    <label class="admin-check-label">
+      <input type="checkbox" id="userEditAdmin" onchange="toggleAdminCheck()" />
+      Administrator (all platoons + user management)
+    </label>
+    <div id="userEditError" class="login-error" style="display:none"></div>
+    <div class="modal-buttons">
+      <button class="btn-small btn-danger" onclick="closeUserEdit()">Cancel</button>
+      <button class="btn-small btn-add" onclick="saveUserEdit()">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Change Password Modal (global — works from any screen) -->
 <div class="modal-overlay" id="changePwModal">
