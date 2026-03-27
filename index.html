@@ -767,7 +767,12 @@
     <div class="notes-preview-label">Generated Note</div>
     <div class="notes-preview" id="notesPreview"></div>
 
+    <div id="futureScheduleNotice" style="display:none;margin-top:8px;padding:8px 10px;border-radius:6px;background:#6c5ce722;border:1px solid #6c5ce7;font-size:0.82em;color:#a29bfe;">
+      &#128337; Start date is in the future — this will be <strong>scheduled</strong> and activate automatically on the start date.
+    </div>
+
     <div class="modal-buttons">
+      <button class="btn-small btn-danger" id="clearScheduleBtn" onclick="clearSchedule()" style="display:none">&#10005; Clear Scheduled</button>
       <button class="btn-small btn-danger" onclick="closeTdyLeaveModal()">Cancel</button>
       <button class="btn-small btn-add" onclick="saveTdyLeave()">Save</button>
     </div>
@@ -873,8 +878,12 @@ async function load() {
       id: p.id, rank: p.rank, last: p.last, first: p.first,
       status: p.status, notes: p.notes || '',
       from: p.from_date || '', to: p.to_date || '',
-      present_date: p.present_date || ''
+      present_date: p.present_date || '',
+      sched_status: p.sched_status || '', sched_from: p.sched_from || '',
+      sched_to: p.sched_to || '', sched_notes: p.sched_notes || ''
     }));
+    // Activate any scheduled entries whose start date has arrived
+    api('POST', '/activate-scheduled');
     if (settings.unit_name) {
       document.getElementById('unitName').value = settings.unit_name;
     }
@@ -894,7 +903,9 @@ async function apiUpdate(p) {
     rank: p.rank, last: p.last, first: p.first,
     status: p.status, notes: p.notes,
     from_date: p.from, to_date: p.to,
-    present_date: p.present_date || ''
+    present_date: p.present_date || '',
+    sched_status: p.sched_status || '', sched_from: p.sched_from || '',
+    sched_to: p.sched_to || '', sched_notes: p.sched_notes || ''
   });
 }
 
@@ -997,13 +1008,15 @@ function render() {
     ? applySort(visible.filter(p => p.status === 'other' || p.status === 'ftr'))
     : visible.filter(p => p.status === 'other' || p.status === 'ftr').sort(endDateSort);
   const loanList        = applySort(visible.filter(p => p.status === 'loan'));
+  const scheduledList   = applySort(visible.filter(p => p.sched_status));
 
   const body = document.getElementById('personnelBody');
   body.innerHTML = '';
 
   // Counts always use full (unfiltered) personnel — loan excluded from accountability counts
-  let counts = { present:0, unaccounted:0, leave:0, pass:0, tdy:0, other:0, ftr:0, loan:0 };
+  let counts = { present:0, unaccounted:0, leave:0, pass:0, tdy:0, other:0, ftr:0, loan:0, scheduled:0 };
   personnel.forEach(p => {
+    if (p.sched_status) counts.scheduled++;
     if (p.status === 'loan') { counts.loan++; }
     else if (isUnaccounted(p)) { counts.unaccounted++; }
     else { counts[p.status] = (counts[p.status] || 0) + 1; }
@@ -1086,6 +1099,37 @@ function render() {
     sep.innerHTML = `<td colspan="7" style="color:#e17055;border-color:#e17055;">OTHER / FTR (${(counts.other||0)+(counts.ftr||0)}${term?` — showing ${otherList.length}`:''})`;
     body.appendChild(sep);
     otherList.forEach(p => { body.appendChild(buildAwayRow(p, rowNum++, todayStr)); });
+  }
+
+  // Scheduled (future) section
+  if (scheduledList.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'section-header';
+    sep.innerHTML = `<td colspan="7" style="color:#fdcb6e;border-color:#fdcb6e;">&#128337; SCHEDULED (${counts.scheduled}${term ? ` — showing ${scheduledList.length}` : ''})</td>`;
+    body.appendChild(sep);
+    scheduledList.forEach(p => {
+      const i = personnel.indexOf(p);
+      const labels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
+      const dateRange = (p.sched_from || p.sched_to)
+        ? `${formatDateShort(p.sched_from)} - ${formatDateShort(p.sched_to)}` : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="checkbox" class="row-checkbox" data-id="${p.id}" onchange="toggleSelectRow(${p.id})" ${bulkSelected.has(p.id)?'checked':''}></td>
+        <td>${rowNum++}</td>
+        <td class="rank-cell">${p.rank}</td>
+        <td class="name-cell">
+          ${p.last}, ${p.first}
+          <div class="away-notes" style="color:#fdcb6e;">
+            ${labels[p.sched_status] || p.sched_status}${p.sched_notes ? ': ' + escapeHtml(p.sched_notes) : ''}
+          </div>
+          ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
+        </td>
+        <td><span style="font-size:0.8em;color:#b2bec3;font-style:italic;">Currently: ${p.status}</span></td>
+        <td><span class="status-badge" style="background:#fdcb6e33;color:#fdcb6e;border:1px solid #fdcb6e;">Scheduled</span></td>
+        <td><button class="btn-small btn-edit" onclick="openTdyLeave(${i})" title="Edit">&#9998;</button></td>
+      `;
+      body.appendChild(tr);
+    });
   }
 
   // On Loan section (bottom, excluded from accountability)
@@ -1318,6 +1362,7 @@ function pickDate(dateStr) {
     document.getElementById('toDisplay').classList.add('selected');
   }
   updateNotesPreview();
+  updateFutureNotice();
   renderCalendar();
 
   // Auto-advance: after picking from, switch to to
@@ -1408,6 +1453,25 @@ function openTdyLeave(i) {
   document.getElementById('calendarContainer').classList.remove('open');
   calTarget = '';
 
+  // Show "Clear Scheduled" if a schedule already exists
+  document.getElementById('clearScheduleBtn').style.display = p.sched_status ? 'inline-block' : 'none';
+
+  // If editing a scheduled (not yet active) entry, load the scheduled fields instead
+  if (p.sched_status) {
+    setAwayStatus(p.sched_status);
+    awayFrom = p.sched_from || ''; awayTo = p.sched_to || '';
+    fromDisplay.textContent = formatDateDisplay(awayFrom);
+    toDisplay.textContent = formatDateDisplay(awayTo);
+    fromDisplay.classList.toggle('selected', !!awayFrom);
+    toDisplay.classList.toggle('selected', !!awayTo);
+    if (p.sched_status === 'tdy' && p.sched_notes) {
+      const idx = p.sched_notes.indexOf(' - ');
+      document.getElementById('awaySchool').value = idx !== -1 ? p.sched_notes.slice(0, idx) : p.sched_notes;
+      document.getElementById('awayLocation').value = idx !== -1 ? p.sched_notes.slice(idx + 3) : '';
+    }
+  }
+
+  updateFutureNotice();
   updateNotesPreview();
   document.getElementById('tdyLeaveModal').classList.add('active');
 }
@@ -1422,28 +1486,52 @@ function closeTdyLeaveModal() {
 async function saveTdyLeave() {
   if (tdyLeaveIndex < 0) return;
   const p = personnel[tdyLeaveIndex];
+  const today = getTodayStr();
+  const isFuture = awayFrom && awayFrom > today && awayStatus !== 'loan';
 
-  p.status = awayStatus;
-
+  // Build notes string
+  let notesVal = '';
   if (awayStatus === 'tdy') {
     const school = document.getElementById('awaySchool').value.trim();
     const location = document.getElementById('awayLocation').value.trim();
-    const parts = [];
-    if (school) parts.push(school);
-    if (location) parts.push(location);
-    p.notes = parts.join(' - ');
-    p.from = awayFrom; p.to = awayTo;
+    notesVal = [school, location].filter(Boolean).join(' - ');
   } else if (awayStatus === 'loan') {
-    p.notes = document.getElementById('loanPosition').value.trim();
-    p.from = ''; p.to = '';
+    notesVal = document.getElementById('loanPosition').value.trim();
+  }
+
+  if (isFuture) {
+    // Save as scheduled — don't change current status
+    p.sched_status = awayStatus;
+    p.sched_from   = awayFrom;
+    p.sched_to     = awayTo;
+    p.sched_notes  = notesVal;
   } else {
-    p.notes = '';
-    p.from = awayFrom; p.to = awayTo;
+    // Active immediately — clear any existing schedule
+    p.status = awayStatus;
+    p.notes  = notesVal;
+    p.from   = awayStatus === 'loan' ? '' : awayFrom;
+    p.to     = awayStatus === 'loan' ? '' : awayTo;
+    p.sched_status = ''; p.sched_from = ''; p.sched_to = ''; p.sched_notes = '';
   }
 
   await apiUpdate(p);
   closeTdyLeaveModal();
   render();
+}
+
+function clearSchedule() {
+  if (tdyLeaveIndex < 0) return;
+  const p = personnel[tdyLeaveIndex];
+  p.sched_status = ''; p.sched_from = ''; p.sched_to = ''; p.sched_notes = '';
+  apiUpdate(p);
+  closeTdyLeaveModal();
+  render();
+}
+
+function updateFutureNotice() {
+  const today = getTodayStr();
+  const isFuture = awayFrom && awayFrom > today && awayStatus !== 'loan';
+  document.getElementById('futureScheduleNotice').style.display = isFuture ? 'block' : 'none';
 }
 
 // ─── Add / Edit Person Modal ───
