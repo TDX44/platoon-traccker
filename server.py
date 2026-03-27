@@ -267,10 +267,10 @@ def index():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = (data.get('username') or '').strip()
+    username = (data.get('username') or '').strip().lower()
     password = data.get('password') or ''
     conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    user = conn.execute('SELECT * FROM users WHERE LOWER(username) = ?', (username,)).fetchone()
     conn.close()
     if not user or not check_password_hash(user['password_hash'], password):
         return jsonify({'error': 'Invalid username or password'}), 401
@@ -335,7 +335,7 @@ def get_users():
 @admin_required
 def create_user():
     data = request.get_json()
-    username = (data.get('username') or '').strip()
+    username = (data.get('username') or '').strip().lower()
     password = data.get('password') or ''
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
