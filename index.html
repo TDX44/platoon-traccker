@@ -317,6 +317,23 @@
   .login-card label { display: block; margin-bottom: 4px; font-size: 0.9em; color: #aaa; }
   .login-card input { width: 100%; padding: 9px 10px; margin-bottom: 14px; border: 1px solid #444; border-radius: 5px; background: #1a1a2e; color: #e0e0e0; font-size: 0.95em; }
 
+  /* ─── PIN pad ─── */
+  .pin-display {
+    text-align: center; font-size: 2em; letter-spacing: 0.4em; padding: 10px;
+    background: #1a1a2e; border-radius: 8px; margin-bottom: 12px; color: #00d4ff;
+  }
+  .pin-pad {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px;
+  }
+  .pin-pad button {
+    padding: 14px; font-size: 1.2em; font-weight: 600; background: #3a3a55;
+    color: #e0e0e0; border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s;
+  }
+  .pin-pad button:hover { background: #00d4ff; color: #1a1a2e; }
+  body.light-mode .pin-display { background: #e8edf4; color: #0770c2; }
+  body.light-mode .pin-pad button { background: #dde3ee; color: #2d3436; }
+  body.light-mode .pin-pad button:hover { background: #0984e3; color: #fff; }
+
   /* ─── Hamburger menu ─── */
   .hamburger-wrap { position: absolute; top: 0; left: 0; z-index: 50; }
   .hamburger-btn {
@@ -490,13 +507,32 @@
   <div class="login-card">
     <img src="/images/company-logo.png" alt="Unit Logo" style="width:140px;height:140px;object-fit:contain;margin:0 auto 12px;display:block;">
     <div class="login-title">Platoon Accountability</div>
-    <div class="login-subtitle">Sign in to continue</div>
+    <div class="login-subtitle" id="loginSubtitle">Sign in to continue</div>
     <div id="loginError" class="login-error" style="display:none"></div>
-    <label>Username</label>
-    <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
-    <label>Password</label>
-    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
-    <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
+
+    <!-- Password login -->
+    <div id="pwLoginForm">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
+      <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
+      <button class="btn-login" style="background:#636e72;margin-top:8px;" onclick="showPinLogin()">Use PIN Instead</button>
+    </div>
+
+    <!-- PIN login -->
+    <div id="pinLoginForm" style="display:none;">
+      <label>Username</label>
+      <input type="text" id="pinUsername" placeholder="Username" autocomplete="username" />
+      <div class="pin-display" id="pinDisplay">&#9679;&#9679;&#9679;&#9679;</div>
+      <div class="pin-pad">
+        <button onclick="pinPad('1')">1</button><button onclick="pinPad('2')">2</button><button onclick="pinPad('3')">3</button>
+        <button onclick="pinPad('4')">4</button><button onclick="pinPad('5')">5</button><button onclick="pinPad('6')">6</button>
+        <button onclick="pinPad('7')">7</button><button onclick="pinPad('8')">8</button><button onclick="pinPad('9')">9</button>
+        <button onclick="pinClear()" style="font-size:0.8em;">CLR</button><button onclick="pinPad('0')">0</button><button onclick="pinBack()">&#9003;</button>
+      </div>
+      <button class="btn-login" style="background:#636e72;margin-top:8px;" onclick="showPwLogin()">Use Password Instead</button>
+    </div>
   </div>
 </div>
 
@@ -508,6 +544,7 @@
       <button onclick="toggleTheme();closeHamburger()" id="themeMenuItem">&#9788; Light Mode</button>
       <button id="manageUsersMenuItem" onclick="openUserMgmt();closeHamburger()" style="display:none">&#9881; Manage Users</button>
       <button onclick="openChangePwModal();closeHamburger()">&#128273; Change Password</button>
+      <button onclick="openPinSetupModal();closeHamburger()">&#128290; Set PIN</button>
       <button onclick="doLogout()" style="color:#ff7675;">&#8594; Sign Out</button>
     </div>
   </div>
@@ -547,6 +584,7 @@
 <div class="controls controls-secondary" style="margin-top:6px;">
   <button class="btn-reset" onclick="openHistory()">&#128337; History</button>
   <button class="btn-reset" onclick="printRoster()">&#128424; Print</button>
+  <button class="btn-reset" onclick="exportCSV()">&#128190; CSV</button>
   <button class="btn-reset" id="auditLogBtn" onclick="openAuditLog()" style="display:none">&#128269; Audit</button>
 </div>
 <div class="search-wrap">
@@ -1870,6 +1908,7 @@ function userHasAccess(platoon) {
 }
 
 function routeAfterLogin() {
+  resetSessionTimer();
   const p = new URLSearchParams(window.location.search).get('platoon');
   if (p && ['1st', '2nd', 'hq'].includes(p) && userHasAccess(p)) {
     selectPlatoon(p);
@@ -2104,6 +2143,191 @@ window.addEventListener('popstate', () => {
   } else { loadHome(); }
 });
 
+// ─── PIN Login ───
+let pinBuffer = '';
+
+function showPinLogin() {
+  document.getElementById('pwLoginForm').style.display = 'none';
+  document.getElementById('pinLoginForm').style.display = 'block';
+  document.getElementById('loginSubtitle').textContent = 'Enter your PIN';
+  pinBuffer = ''; updatePinDisplay('pinDisplay');
+}
+function showPwLogin() {
+  document.getElementById('pinLoginForm').style.display = 'none';
+  document.getElementById('pwLoginForm').style.display = 'block';
+  document.getElementById('loginSubtitle').textContent = 'Sign in to continue';
+}
+function updatePinDisplay(id) {
+  const el = document.getElementById(id);
+  const filled = '&#9679;'.repeat(pinBuffer.length);
+  const empty = '&#9675;'.repeat(4 - pinBuffer.length);
+  el.innerHTML = filled + empty;
+}
+function pinPad(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d; updatePinDisplay('pinDisplay');
+  if (pinBuffer.length === 4) setTimeout(doPinLogin, 150);
+}
+function pinBack() { pinBuffer = pinBuffer.slice(0, -1); updatePinDisplay('pinDisplay'); }
+function pinClear() { pinBuffer = ''; updatePinDisplay('pinDisplay'); }
+
+async function doPinLogin() {
+  const username = document.getElementById('pinUsername').value.trim();
+  const errEl = document.getElementById('loginError');
+  if (!username) {
+    errEl.textContent = 'Please enter your username.'; errEl.style.display = 'block';
+    pinBuffer = ''; updatePinDisplay('pinDisplay'); return;
+  }
+  try {
+    const res = await fetch('/api/pin-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, pin: pinBuffer })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Invalid PIN.'; errEl.style.display = 'block';
+      pinBuffer = ''; updatePinDisplay('pinDisplay'); return;
+    }
+    errEl.style.display = 'none';
+    currentUser = data;
+    document.getElementById('loginScreen').style.display = 'none';
+    routeAfterLogin();
+  } catch(e) {
+    errEl.textContent = 'Connection error.'; errEl.style.display = 'block';
+    pinBuffer = ''; updatePinDisplay('pinDisplay');
+  }
+}
+
+// ─── PIN Setup ───
+let pinSetupBuffer = '';
+
+function openPinSetupModal() {
+  pinSetupBuffer = ''; updatePinDisplay('pinSetupDisplay');
+  document.getElementById('pinSetupDisplay').innerHTML = '&#9675;&#9675;&#9675;&#9675;';
+  document.getElementById('pinSetupMsg').style.display = 'none';
+  document.getElementById('pinSetupModal').classList.add('active');
+}
+function closePinSetupModal() { document.getElementById('pinSetupModal').classList.remove('active'); }
+function pinSetupPad(d) {
+  if (pinSetupBuffer.length >= 4) return;
+  pinSetupBuffer += d; updatePinSetupDisplay();
+}
+function pinSetupBack() { pinSetupBuffer = pinSetupBuffer.slice(0, -1); updatePinSetupDisplay(); }
+function pinSetupClear() { pinSetupBuffer = ''; updatePinSetupDisplay(); }
+function updatePinSetupDisplay() {
+  const el = document.getElementById('pinSetupDisplay');
+  el.innerHTML = '&#9679;'.repeat(pinSetupBuffer.length) + '&#9675;'.repeat(4 - pinSetupBuffer.length);
+}
+async function savePin() {
+  if (pinSetupBuffer.length !== 4) {
+    showPinMsg('Enter a 4-digit PIN.', '#ff7675'); return;
+  }
+  const res = await api('PUT', '/me/pin', { pin: pinSetupBuffer });
+  if (res && !res.error) { showPinMsg('PIN saved!', '#00b894'); setTimeout(closePinSetupModal, 1200); }
+  else showPinMsg(res?.error || 'Error saving PIN.', '#ff7675');
+}
+async function removePin() {
+  const res = await api('PUT', '/me/pin', { pin: '' });
+  if (res && !res.error) { showPinMsg('PIN removed.', '#fdcb6e'); setTimeout(closePinSetupModal, 1200); }
+  else showPinMsg(res?.error || 'Error.', '#ff7675');
+}
+function showPinMsg(msg, color) {
+  const el = document.getElementById('pinSetupMsg');
+  el.textContent = msg; el.style.color = color; el.style.display = 'block';
+}
+
+// ─── Export CSV ───
+function exportCSV() {
+  const today = getTodayStr();
+  const rows = [['#','Rank','Last','First','Status','Notes','From','To']];
+  personnel.forEach((p, i) => {
+    const status = p.status === 'present'
+      ? (p.present_date === today ? 'Present' : 'Unaccounted')
+      : p.status.charAt(0).toUpperCase() + p.status.slice(1);
+    rows.push([i+1, p.rank, p.last, p.first, status, p.notes || '', p.from || '', p.to || '']);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${currentPlatoon}-platoon-${today}.csv`;
+  a.click();
+}
+
+// ─── Reset Day (with confirmation modal) ───
+function resetDay() {
+  const today = getTodayStr();
+  const present = personnel.filter(p => p.status === 'present' && p.present_date === today).length;
+  const unaccounted = personnel.filter(p => p.status === 'present' && p.present_date !== today).length;
+  const tdy = personnel.filter(p => ['tdy','leave','pass','other','ftr'].includes(p.status)).length;
+  document.getElementById('resetSummary').innerHTML =
+    `<div>Present today: <strong style="color:#00b894">${present}</strong></div>` +
+    `<div>Unaccounted: <strong style="color:#e17055">${unaccounted}</strong></div>` +
+    `<div>Away (TDY/Leave/etc): <strong style="color:#74b9ff">${tdy}</strong></div>` +
+    `<div style="margin-top:8px;color:#fdcb6e;">After reset: all ${present + unaccounted} present soldiers will need to be marked again.</div>`;
+  document.getElementById('resetConfirmModal').classList.add('active');
+}
+function closeResetConfirm() { document.getElementById('resetConfirmModal').classList.remove('active'); }
+async function confirmReset() {
+  closeResetConfirm();
+  await api('POST', '/reset', { platoon: currentPlatoon });
+  personnel.forEach(p => { if (p.status === 'present') p.present_date = ''; });
+  render();
+}
+
+// ─── Swipe to Mark Present ───
+(function initSwipe() {
+  let touchStartX = 0, touchStartY = 0, touchTarget = null;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchTarget = e.target.closest('tr');
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!touchTarget) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    if (dx > 60 && dy < 40) {
+      const btn = touchTarget.querySelector('.present-btn.unaccounted, .present-btn.inactive');
+      if (btn) btn.click();
+    }
+    touchTarget = null;
+  }, { passive: true });
+})();
+
+// ─── Session Timeout ───
+const SESSION_WARNING_SECS = 60;
+const SESSION_TIMEOUT_MINS = 30;
+let _sessionTimer = null, _sessionWarnTimer = null, _sessionCountInterval = null;
+
+function resetSessionTimer() {
+  clearTimeout(_sessionTimer); clearTimeout(_sessionWarnTimer);
+  const warnAfter = (SESSION_TIMEOUT_MINS * 60 - SESSION_WARNING_SECS) * 1000;
+  _sessionWarnTimer = setTimeout(showSessionWarning, warnAfter);
+  _sessionTimer = setTimeout(() => { doLogout(); }, SESSION_TIMEOUT_MINS * 60 * 1000);
+}
+function showSessionWarning() {
+  document.getElementById('sessionWarnModal').classList.add('active');
+  let secs = SESSION_WARNING_SECS;
+  document.getElementById('sessionCountdown').textContent = secs;
+  _sessionCountInterval = setInterval(() => {
+    secs--;
+    document.getElementById('sessionCountdown').textContent = secs;
+    if (secs <= 0) { clearInterval(_sessionCountInterval); }
+  }, 1000);
+}
+function extendSession() {
+  document.getElementById('sessionWarnModal').classList.remove('active');
+  clearInterval(_sessionCountInterval);
+  resetSessionTimer();
+  api('GET', '/me');
+}
+['mousemove','keydown','touchstart','click'].forEach(evt =>
+  document.addEventListener(evt, () => {
+    if (currentUser) resetSessionTimer();
+  }, { passive: true })
+);
+
 initTheme();
 initApp();
 </script>
@@ -2166,5 +2390,48 @@ initApp();
     </div>
   </div>
 </div>
+<!-- PIN Setup Modal -->
+<div class="modal-overlay" id="pinSetupModal">
+  <div class="modal" style="max-width:320px;">
+    <h2>&#128290; Set PIN</h2>
+    <p style="font-size:0.85em;color:#b2bec3;margin-bottom:12px;">Set a 4-digit PIN for quick login. Leave blank to remove your PIN.</p>
+    <div class="pin-display" id="pinSetupDisplay">&#8212;&#8212;&#8212;&#8212;</div>
+    <div class="pin-pad">
+      <button onclick="pinSetupPad('1')">1</button><button onclick="pinSetupPad('2')">2</button><button onclick="pinSetupPad('3')">3</button>
+      <button onclick="pinSetupPad('4')">4</button><button onclick="pinSetupPad('5')">5</button><button onclick="pinSetupPad('6')">6</button>
+      <button onclick="pinSetupPad('7')">7</button><button onclick="pinSetupPad('8')">8</button><button onclick="pinSetupPad('9')">9</button>
+      <button onclick="pinSetupClear()" style="font-size:0.8em;">CLR</button><button onclick="pinSetupPad('0')">0</button><button onclick="pinSetupBack()">&#9003;</button>
+    </div>
+    <div id="pinSetupMsg" style="display:none;margin-top:8px;font-size:0.85em;"></div>
+    <div class="modal-buttons" style="margin-top:12px;">
+      <button class="btn-small btn-danger" onclick="closePinSetupModal()">Cancel</button>
+      <button class="btn-small btn-danger" onclick="removePin()" style="background:#636e72;">Remove PIN</button>
+      <button class="btn-small btn-add" onclick="savePin()">Save PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Confirmation Modal -->
+<div class="modal-overlay" id="resetConfirmModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>&#9888; Reset Day</h2>
+    <p style="font-size:0.9em;color:#b2bec3;margin-bottom:10px;">This will clear all present markings. Everyone will need to be marked present again.</p>
+    <div id="resetSummary" style="background:#1a1a2e;border-radius:6px;padding:10px;margin-bottom:14px;font-size:0.85em;line-height:1.8;"></div>
+    <div class="modal-buttons">
+      <button class="btn-small btn-danger" onclick="closeResetConfirm()">Cancel</button>
+      <button class="btn-small btn-add" onclick="confirmReset()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Session Timeout Warning Modal -->
+<div class="modal-overlay" id="sessionWarnModal" style="z-index:9999;">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <h2>&#9201; Session Expiring</h2>
+    <p style="color:#b2bec3;margin-bottom:16px;">You'll be signed out in <span id="sessionCountdown">60</span> seconds due to inactivity.</p>
+    <button class="btn-login" onclick="extendSession()">Stay Signed In</button>
+  </div>
+</div>
+
 </body>
 </html>

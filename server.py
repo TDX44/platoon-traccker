@@ -2,6 +2,9 @@ import sqlite3
 import os
 import secrets
 import string
+import threading
+import time
+from datetime import datetime, date
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -92,6 +95,10 @@ def init_db():
     if 'platoon' not in cols:
         cur.execute('ALTER TABLE personnel ADD COLUMN platoon TEXT DEFAULT "2nd"')
         cur.execute('UPDATE personnel SET platoon = "2nd" WHERE platoon IS NULL OR platoon = ""')
+
+    ucols = [row[1] for row in cur.execute('PRAGMA table_info(users)').fetchall()]
+    if 'pin_hash' not in ucols:
+        cur.execute('ALTER TABLE users ADD COLUMN pin_hash TEXT DEFAULT ""')
 
     # ── Seed admin user ──
     cur.execute('SELECT COUNT(*) FROM users')
@@ -275,6 +282,7 @@ def login():
     if not user or not check_password_hash(user['password_hash'], password):
         return jsonify({'error': 'Invalid username or password'}), 401
     session['user_id'] = user['id']
+    session['_last_active'] = time.time()
     log_action('LOGIN', f'User {username} logged in')
     return jsonify({
         'id': user['id'], 'username': user['username'],
@@ -591,6 +599,104 @@ def delete_duty(entry_id):
     return jsonify({'success': True})
 
 
+# ── Session timeout ──
+SESSION_TIMEOUT_MINUTES = 30
+
+@app.before_request
+def check_session_timeout():
+    if 'user_id' in session:
+        last = session.get('_last_active')
+        now = time.time()
+        if last and (now - last) > SESSION_TIMEOUT_MINUTES * 60:
+            session.clear()
+            return jsonify({'error': 'Session expired'}), 401
+        session['_last_active'] = now
+
+
+# ── PIN login ──
+
+@app.route('/api/pin-login', methods=['POST'])
+def pin_login():
+    data = request.get_json()
+    username = (data.get('username') or '').strip().lower()
+    pin = (data.get('pin') or '').strip()
+    if not username or not pin or len(pin) != 4 or not pin.isdigit():
+        return jsonify({'error': 'Invalid PIN format'}), 400
+    conn = get_db()
+    user = conn.execute('SELECT * FROM users WHERE LOWER(username) = ?', (username,)).fetchone()
+    conn.close()
+    if not user or not user['pin_hash'] or not check_password_hash(user['pin_hash'], pin):
+        return jsonify({'error': 'Invalid username or PIN'}), 401
+    session['user_id'] = user['id']
+    session['_last_active'] = time.time()
+    return jsonify({
+        'id': user['id'], 'username': user['username'],
+        'is_admin': bool(user['is_admin']), 'platoons': user['platoons']
+    })
+
+
+@app.route('/api/me/pin', methods=['PUT'])
+@login_required
+def set_pin():
+    data = request.get_json()
+    pin = (data.get('pin') or '').strip()
+    if pin and (len(pin) != 4 or not pin.isdigit()):
+        return jsonify({'error': 'PIN must be exactly 4 digits'}), 400
+    conn = get_db()
+    new_hash = generate_password_hash(pin) if pin else ''
+    conn.execute('UPDATE users SET pin_hash = ? WHERE id = ?', (new_hash, session['user_id']))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+# ── Reset route (used by auto-reset and manual reset) ──
+
+@app.route('/api/reset', methods=['POST'])
+@login_required
+def reset_day():
+    data = request.get_json() or {}
+    platoon = data.get('platoon', '')
+    user = get_current_user()
+    if platoon and not has_platoon_access(user, platoon):
+        return jsonify({'error': 'Forbidden'}), 403
+    conn = get_db()
+    if platoon:
+        conn.execute(
+            "UPDATE personnel SET present_date = '' WHERE status = 'present' AND platoon = ?",
+            (platoon,)
+        )
+    else:
+        conn.execute("UPDATE personnel SET present_date = '' WHERE status = 'present'")
+    conn.commit()
+    conn.close()
+    log_action('RESET_DAY', f'Day reset for platoon: {platoon or "all"}', platoon)
+    return jsonify({'success': True})
+
+
+# ── Midnight auto-reset background thread ──
+
+def _midnight_reset_worker():
+    last_reset_date = None
+    while True:
+        now = datetime.now()
+        today = now.date()
+        # Run reset once per day at midnight (between 00:00 and 00:01)
+        if now.hour == 0 and now.minute == 0 and today != last_reset_date:
+            try:
+                conn = get_db()
+                conn.execute("UPDATE personnel SET present_date = '' WHERE status = 'present'")
+                conn.commit()
+                conn.close()
+                last_reset_date = today
+                print(f'[auto-reset] Day reset at {now}', flush=True)
+            except Exception as e:
+                print(f'[auto-reset] Error: {e}', flush=True)
+        time.sleep(30)
+
+
 if __name__ == '__main__':
     init_db()
+    t = threading.Thread(target=_midnight_reset_worker, daemon=True)
+    t.start()
     app.run(host='0.0.0.0', port=5000, debug=True)
