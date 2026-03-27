@@ -1033,7 +1033,7 @@ function buildAwayRow(p, rowNum, todayStr) {
       ${p.last}, ${p.first}
       ${p.notes ? `<div class="away-notes">${escapeHtml(p.notes)}</div>` : ''}
       ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
-      ${returningBadge ? `<div style="margin-top:3px;">${returningBadge}</div>` : ''}
+      ${returningBadge ? `<div style="margin-top:3px;text-align:left;">${returningBadge}</div>` : ''}
     </td>
     <td style="display:flex;align-items:center;gap:6px;">${statusBadge(p.status)}<button class="present-btn inactive" onclick="markPresent(${i})">&#9675; Mark Present</button></td>
     <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
