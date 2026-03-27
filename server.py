@@ -100,6 +100,11 @@ def init_db():
     if 'pin_hash' not in ucols:
         cur.execute('ALTER TABLE users ADD COLUMN pin_hash TEXT DEFAULT ""')
 
+    # Scheduled TDY/Leave columns
+    for col, default in [('sched_status',''), ('sched_from',''), ('sched_to',''), ('sched_notes','')]:
+        if col not in cols:
+            cur.execute(f'ALTER TABLE personnel ADD COLUMN {col} TEXT DEFAULT ""')
+
     # ── Seed admin user ──
     cur.execute('SELECT COUNT(*) FROM users')
     if cur.fetchone()[0] == 0:
@@ -460,7 +465,8 @@ def add_person():
 def update_person(person_id):
     data = request.get_json()
     fields, values = [], []
-    for col in ('rank', 'last', 'first', 'status', 'notes', 'from_date', 'to_date', 'present_date'):
+    for col in ('rank', 'last', 'first', 'status', 'notes', 'from_date', 'to_date', 'present_date',
+                'sched_status', 'sched_from', 'sched_to', 'sched_notes'):
         if col in data:
             fields.append(f'{col} = ?')
             values.append(data[col])
@@ -713,6 +719,17 @@ def import_backup():
         conn.close()
 
 
+@app.route('/api/activate-scheduled', methods=['POST'])
+@login_required
+def activate_scheduled():
+    today_str = date.today().isoformat()
+    conn = get_db()
+    activated = _activate_scheduled(conn, today_str)
+    conn.commit()
+    conn.close()
+    return jsonify({'activated': activated})
+
+
 # ── Session timeout ──
 SESSION_TIMEOUT_MINUTES = 30
 
@@ -790,20 +807,36 @@ def reset_day():
 
 # ── Midnight auto-reset background thread ──
 
+def _activate_scheduled(conn, today_str):
+    """Promote sched_* entries whose start date has arrived."""
+    rows = conn.execute(
+        "SELECT id, sched_status, sched_from, sched_to, sched_notes FROM personnel "
+        "WHERE sched_status != '' AND sched_from <= ?", (today_str,)
+    ).fetchall()
+    for r in rows:
+        conn.execute(
+            "UPDATE personnel SET status=?, from_date=?, to_date=?, notes=?, "
+            "sched_status='', sched_from='', sched_to='', sched_notes='' WHERE id=?",
+            (r['sched_status'], r['sched_from'], r['sched_to'], r['sched_notes'], r['id'])
+        )
+    return len(rows)
+
+
 def _midnight_reset_worker():
     last_reset_date = None
     while True:
         now = datetime.now()
         today = now.date()
-        # Run reset once per day at midnight (between 00:00 and 00:01)
+        today_str = today.isoformat()
         if now.hour == 0 and now.minute == 0 and today != last_reset_date:
             try:
                 conn = get_db()
                 conn.execute("UPDATE personnel SET present_date = '' WHERE status = 'present'")
+                activated = _activate_scheduled(conn, today_str)
                 conn.commit()
                 conn.close()
                 last_reset_date = today
-                print(f'[auto-reset] Day reset at {now}', flush=True)
+                print(f'[auto-reset] Day reset at {now}; {activated} scheduled entries activated', flush=True)
             except Exception as e:
                 print(f'[auto-reset] Error: {e}', flush=True)
         time.sleep(30)
