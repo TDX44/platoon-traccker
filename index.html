@@ -641,9 +641,12 @@
     <input type="text" id="addFirst" placeholder="e.g. John" />
     <label id="addNotesLabel">Notes (optional)</label>
     <input type="text" id="addNotes" placeholder="e.g. POC: SGT Jones" />
-    <div class="modal-buttons">
-      <button class="btn-small btn-danger" onclick="closeAddModal()">Cancel</button>
-      <button class="btn-small btn-add" id="savePersonBtn" onclick="savePerson()">Save</button>
+    <div class="modal-buttons" style="justify-content:space-between;">
+      <button class="btn-small btn-danger" id="deletePersonBtn" onclick="deleteFromEditModal()" style="display:none">&#10005; Delete</button>
+      <div style="display:flex;gap:6px;margin-left:auto;">
+        <button class="btn-small btn-danger" onclick="closeAddModal()">Cancel</button>
+        <button class="btn-small btn-add" id="savePersonBtn" onclick="savePerson()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -975,7 +978,6 @@ function render() {
         <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
         <td>
           <button class="btn-small btn-edit" onclick="openEditModal(${i})" title="Edit">&#9998;</button>
-          <button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button>
         </td>
       `;
       body.appendChild(tr);
@@ -1002,7 +1004,6 @@ function render() {
       <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
       <td>
         <button class="btn-small btn-edit" onclick="openEditModal(${i})" title="Edit">&#9998;</button>
-        <button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button>
       </td>
     `;
     body.appendChild(tr);
@@ -1079,7 +1080,6 @@ function buildAwayRow(p, rowNum, todayStr) {
     </td>
     <td>
       <button class="btn-small btn-edit" onclick="openEditModal(${i})" title="Edit">&#9998;</button>
-      <button class="btn-small btn-danger" onclick="removePerson(${i})" title="Remove">&#10005;</button>
     </td>
   `;
   return tr;
@@ -1130,6 +1130,12 @@ async function removePerson(i) {
     personnel.splice(i, 1);
     render();
   }
+}
+
+async function deleteFromEditModal() {
+  if (editIndex < 0) return;
+  await removePerson(editIndex);
+  closeAddModal();
 }
 
 // ─── Calendar ───
@@ -1373,6 +1379,7 @@ function openAddModal() {
   document.getElementById('addNotes').value = '';
   document.getElementById('addNotes').disabled = false;
   document.getElementById('addNotesLabel').textContent = 'Notes (optional)';
+  document.getElementById('deletePersonBtn').style.display = 'none';
   document.getElementById('addModal').classList.add('active');
   document.getElementById('addLast').focus();
 }
@@ -1396,6 +1403,7 @@ function openEditModal(i) {
     notesEl.disabled = true;
     notesLbl.textContent = 'Notes (managed via TDY / Leave modal)';
   }
+  document.getElementById('deletePersonBtn').style.display = 'inline-block';
   document.getElementById('addModal').classList.add('active');
   document.getElementById('addLast').focus();
 }
