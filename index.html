@@ -363,9 +363,28 @@
   }
   .hamburger-dropdown button:last-child { border-bottom: none; }
   .hamburger-dropdown button:hover { background: #35355a; }
+  /* Submenu group */
+  .menu-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .menu-group-header .menu-arrow { font-size: 0.7em; opacity: 0.6; transition: transform 0.2s; }
+  .menu-group-header.open .menu-arrow { transform: rotate(90deg); }
+  .menu-submenu {
+    display: none; flex-direction: column; background: #26263d;
+    border-top: 1px solid #3a3a55;
+  }
+  .menu-submenu.open { display: flex; }
+  .menu-submenu button {
+    padding-left: 28px; font-size: 0.85em; font-weight: 400;
+    color: #b2bec3; border-bottom-color: #2e2e48;
+  }
+  .menu-submenu button:hover { background: #2e2e4e; color: #e0e0e0; }
   body.light-mode .hamburger-dropdown { background: #fff; border-color: #c0c8d8; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
   body.light-mode .hamburger-dropdown button { color: #2d3436; border-bottom-color: #e0e6ef; }
   body.light-mode .hamburger-dropdown button:hover { background: #f0f4f8; }
+  body.light-mode .menu-submenu { background: #f5f7fa; border-top-color: #d0d8e8; }
+  body.light-mode .menu-submenu button { color: #636e72; border-bottom-color: #e0e6ef; }
+  body.light-mode .menu-submenu button:hover { background: #e8edf4; color: #2d3436; }
 
   /* ─── Home / Platoon selector ─── */
   #homeScreen {
@@ -550,11 +569,26 @@
     <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleHamburger()" aria-label="Menu">&#9776;</button>
     <div class="hamburger-dropdown" id="hamburgerDropdown">
       <button onclick="toggleTheme();closeHamburger()" id="themeMenuItem">&#9788; Light Mode</button>
-      <button id="manageUsersMenuItem" onclick="openUserMgmt();closeHamburger()" style="display:none">&#9881; Manage Users</button>
-      <button id="backupMenuItem" onclick="exportBackup();closeHamburger()" style="display:none">&#128190; Export Backup</button>
-      <button id="restoreMenuItem" onclick="openRestoreModal();closeHamburger()" style="display:none">&#128228; Import Backup</button>
-      <button onclick="openChangePwModal();closeHamburger()">&#128273; Change Password</button>
-      <button onclick="openPinSetupModal();closeHamburger()">&#128290; Set PIN</button>
+
+      <!-- Backup group -->
+      <button class="menu-group-header" id="backupGroupHeader" onclick="toggleMenuGroup('backupGroup')" style="display:none">
+        &#128190; Backup <span class="menu-arrow">&#9658;</span>
+      </button>
+      <div class="menu-submenu" id="backupGroup">
+        <button onclick="exportBackup();closeHamburger()">&#8595; Export Backup</button>
+        <button onclick="openRestoreModal();closeHamburger()">&#8593; Import Backup</button>
+      </div>
+
+      <!-- Users group -->
+      <button class="menu-group-header" onclick="toggleMenuGroup('usersGroup')">
+        &#128100; Account <span class="menu-arrow">&#9658;</span>
+      </button>
+      <div class="menu-submenu" id="usersGroup">
+        <button onclick="openChangePwModal();closeHamburger()">&#128273; Change Password</button>
+        <button onclick="openPinSetupModal();closeHamburger()">&#128290; Set PIN</button>
+        <button id="manageUsersMenuItem" onclick="openUserMgmt();closeHamburger()" style="display:none">&#9881; Manage Users</button>
+      </div>
+
       <button onclick="doLogout()" style="color:#ff7675;">&#8594; Sign Out</button>
     </div>
   </div>
@@ -1687,6 +1721,21 @@ function toggleHamburger() {
 }
 function closeHamburger() {
   document.getElementById('hamburgerDropdown').classList.remove('open');
+  // Collapse all submenus
+  document.querySelectorAll('.menu-submenu').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.menu-group-header').forEach(h => h.classList.remove('open'));
+}
+function toggleMenuGroup(groupId) {
+  const group = document.getElementById(groupId);
+  const header = group.previousElementSibling;
+  const isOpen = group.classList.contains('open');
+  // Close all submenus first
+  document.querySelectorAll('.menu-submenu').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.menu-group-header').forEach(h => h.classList.remove('open'));
+  if (!isOpen) {
+    group.classList.add('open');
+    header.classList.add('open');
+  }
 }
 
 // ─── Theme ───
@@ -1985,8 +2034,7 @@ async function loadHome() {
   // Show admin items only for admins
   const isAdmin = currentUser && currentUser.is_admin;
   document.getElementById('manageUsersMenuItem').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('backupMenuItem').style.display = 'block';
-  document.getElementById('restoreMenuItem').style.display = 'block';
+  document.getElementById('backupGroupHeader').style.display = 'flex';
 
   // Filter platoon cards by access
   ['1st', '2nd', 'hq'].forEach(p => {
