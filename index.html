@@ -245,8 +245,10 @@
     /* Name - fill remaining space */
     .table-wrap table tbody tr td:nth-child(3) { flex: 1 1 0 !important; min-width: 0; overflow: hidden; }
     .name-cell { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; font-size: 0.8em !important; }
-    .away-notes { font-size: 0.7em !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .away-dates { font-size: 0.65em !important; }
+    .away-notes { font-size: 0.7em !important; white-space: normal !important; overflow: visible !important; }
+    .away-dates { font-size: 0.65em !important; white-space: normal !important; }
+    tr.away-row { align-items: flex-start !important; padding-top: 10px !important; padding-bottom: 10px !important; }
+    tr.away-row .name-cell { white-space: normal !important; overflow: visible !important; text-overflow: unset !important; }
     /* Present btn */
     .table-wrap table tbody tr td:nth-child(4) { flex: 0 0 auto; }
     /* Status / TDY Leave btn */
@@ -382,7 +384,7 @@
   body.light-mode .btn-manage-users { background: #f0f4f8; }
   body.light-mode .user-row { border-bottom-color: #d0d7e0; }
   body.light-mode .search-input { background: #fff; border-color: #c0c8d8; color: #2d3436; }
-  body.light-mode .formation-toggle { background: #f0f4f8; border: 1px solid #c0c8d8; }
+
   body.light-mode .bulk-bar { background: #dbeafe; border-color: #3b82f6; }
   body.light-mode .bulk-bar-label { color: #1d4ed8; }
   body.light-mode #bulkStatusSelect { background: #f0f4f8; border-color: #c0c8d8; color: #2d3436; }
@@ -416,12 +418,6 @@
   .returning-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 0.7em;
     font-weight: 600; background: #fdcb6e; color: #222; margin-left: 6px; }
 
-  /* ─── Formation toggle ─── */
-  .formation-toggle { display: flex; gap: 2px; align-items: center; background: #2d2d44;
-    border-radius: 6px; padding: 2px; }
-  .formation-toggle button { padding: 5px 13px; border: none; border-radius: 4px; cursor: pointer;
-    font-size: 0.82em; font-weight: 600; background: transparent; color: #aaa; transition: all 0.2s; }
-  .formation-toggle button.active { background: #0984e3; color: #fff; }
 
   /* ─── History / Audit / Duty modals ─── */
   .history-list { max-height: 320px; overflow-y: auto; margin-bottom: 10px; }
@@ -506,14 +502,12 @@
 <div class="stats-bar" id="statsBar"></div>
 <div class="controls">
   <button class="btn-back" onclick="goHome()">&#8592; Platoons</button>
-  <div class="formation-toggle">
-    <button id="fmAM" class="active" onclick="setFormation('AM')">AM</button>
-    <button id="fmPM" onclick="setFormation('PM')">PM</button>
-  </div>
   <button class="btn-add" onclick="openAddModal()">+ Add Person</button>
   <button class="btn-import" onclick="openImportModal()">&#8595; Import List</button>
   <button class="btn-reset" onclick="resetDay()">Reset Day</button>
   <button class="btn-generate" onclick="generateReport()">Generate Report</button>
+</div>
+<div class="controls" style="margin-top:6px;">
   <button class="btn-reset" onclick="openHistory()">&#128337; History</button>
   <button class="btn-reset" onclick="printRoster()">&#128424; Print</button>
   <button class="btn-reset" id="auditLogBtn" onclick="openAuditLog()" style="display:none">&#128269; Audit</button>
@@ -728,7 +722,6 @@ let awayStatus = 'tdy';
 let sortCol = 'rank';
 let sortDir = 1;
 let bulkSelected = new Set();
-let currentFormation = 'AM';
 let historyViewData = null;
 
 // ─── API helpers ───
@@ -979,7 +972,6 @@ function render() {
     <div class="stat"><div class="num" style="color:#74b9ff">${counts.tdy||0}</div><div class="label">TDY</div></div>
     <div class="stat"><div class="num" style="color:#e17055">${counts.other||0}</div><div class="label">Other</div></div>
     <div class="stat"><div class="num" style="color:#d63031">${counts.ftr||0}</div><div class="label">FTR</div></div>
-    <div class="stat"><div class="num" style="color:#aaa;font-size:1em;">${currentFormation}</div><div class="label">Formation</div></div>
   `;
 
   updateSortHeaders();
@@ -997,6 +989,7 @@ function buildAwayRow(p, rowNum, todayStr) {
   const returningToday = p.to && p.to === (todayStr || getTodayStr());
   const returningBadge = returningToday ? `<span class="returning-badge">RETURNING TODAY</span>` : '';
   const tr = document.createElement('tr');
+  tr.className = 'away-row';
   tr.innerHTML = `
     <td><input type="checkbox" class="row-checkbox" data-id="${p.id}" onchange="toggleSelectRow(${p.id})" ${bulkSelected.has(p.id)?'checked':''}></td>
     <td>${rowNum}</td>
@@ -1446,7 +1439,7 @@ function generateReport() {
   }
 
   const unitName = document.getElementById('unitName').value || '2nd Platoon Accountability';
-  const today = formatDate(new Date()) + ' | ' + currentFormation + ' Formation';
+  const today = formatDate(new Date());
 
   const present = personnel.filter(p => isPresentToday(p)).sort(rankSort);
   const leave = personnel.filter(p => p.status === 'leave' || p.status === 'pass').sort(endDateSort);
@@ -1579,13 +1572,6 @@ function initTheme() {
   }
 }
 
-// ─── Formation ───
-function setFormation(slot) {
-  currentFormation = slot;
-  document.getElementById('fmAM').classList.toggle('active', slot === 'AM');
-  document.getElementById('fmPM').classList.toggle('active', slot === 'PM');
-  render();
-}
 
 // ─── Search ───
 function getSearchTerm() {
