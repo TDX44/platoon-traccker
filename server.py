@@ -602,14 +602,30 @@ def delete_duty(entry_id):
 # ── Backup / Restore ──
 
 @app.route('/api/backup', methods=['GET'])
-@admin_required
+@login_required
 def export_backup():
+    user = get_current_user()
     conn = get_db()
-    personnel = [dict(r) for r in conn.execute('SELECT * FROM personnel').fetchall()]
-    settings   = [dict(r) for r in conn.execute('SELECT * FROM settings').fetchall()]
-    users      = [dict(r) for r in conn.execute(
-        'SELECT id, username, is_admin, platoons, pin_hash FROM users'
-    ).fetchall()]
+    import json
+    from flask import Response
+
+    if user['is_admin']:
+        personnel = [dict(r) for r in conn.execute('SELECT * FROM personnel').fetchall()]
+        settings  = [dict(r) for r in conn.execute('SELECT * FROM settings').fetchall()]
+        users     = [dict(r) for r in conn.execute(
+            'SELECT id, username, is_admin, platoons, pin_hash FROM users'
+        ).fetchall()]
+        label = 'full'
+    else:
+        accessible = [p.strip() for p in (user['platoons'] or '').split(',') if p.strip()]
+        placeholders = ','.join('?' * len(accessible))
+        personnel = [dict(r) for r in conn.execute(
+            f'SELECT * FROM personnel WHERE platoon IN ({placeholders})', accessible
+        ).fetchall()]
+        settings  = [dict(r) for r in conn.execute('SELECT * FROM settings').fetchall()]
+        users     = []
+        label = '-'.join(accessible)
+
     conn.close()
     payload = {
         'version': 1,
@@ -618,61 +634,78 @@ def export_backup():
         'settings': settings,
         'users': users,
     }
-    log_action('BACKUP_EXPORT', 'Full backup exported')
-    from flask import Response
-    import json
+    log_action('BACKUP_EXPORT', f'Backup exported ({label})')
     return Response(
         json.dumps(payload, indent=2),
         mimetype='application/json',
-        headers={'Content-Disposition': f'attachment; filename=platoon-backup-{date.today()}.json'}
+        headers={'Content-Disposition': f'attachment; filename=platoon-backup-{label}-{date.today()}.json'}
     )
 
 
 @app.route('/api/backup/restore', methods=['POST'])
-@admin_required
+@login_required
 def import_backup():
+    user = get_current_user()
     payload = request.get_json()
     if not payload or payload.get('version') != 1:
         return jsonify({'error': 'Invalid or unsupported backup file'}), 400
 
     conn = get_db()
     try:
-        # Restore personnel
-        if 'personnel' in payload:
-            conn.execute('DELETE FROM personnel')
-            for p in payload['personnel']:
-                conn.execute(
-                    'INSERT INTO personnel (id, rank, last, first, status, notes, from_date, to_date, present_date, platoon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (p.get('id'), p.get('rank',''), p.get('last',''), p.get('first',''),
-                     p.get('status','present'), p.get('notes',''),
-                     p.get('from_date',''), p.get('to_date',''), p.get('present_date',''),
-                     p.get('platoon','2nd'))
-                )
+        restored_personnel = 0
 
-        # Restore settings
+        if 'personnel' in payload:
+            if user['is_admin']:
+                conn.execute('DELETE FROM personnel')
+                for p in payload['personnel']:
+                    conn.execute(
+                        'INSERT INTO personnel (id, rank, last, first, status, notes, from_date, to_date, present_date, platoon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (p.get('id'), p.get('rank',''), p.get('last',''), p.get('first',''),
+                         p.get('status','present'), p.get('notes',''),
+                         p.get('from_date',''), p.get('to_date',''), p.get('present_date',''),
+                         p.get('platoon','2nd'))
+                    )
+                    restored_personnel += 1
+            else:
+                accessible = [p.strip() for p in (user['platoons'] or '').split(',') if p.strip()]
+                for p in payload['personnel']:
+                    if p.get('platoon') not in accessible:
+                        continue
+                    conn.execute(
+                        'DELETE FROM personnel WHERE platoon = ? AND last = ? AND first = ?',
+                        (p['platoon'], p.get('last',''), p.get('first',''))
+                    )
+                    conn.execute(
+                        'INSERT INTO personnel (rank, last, first, status, notes, from_date, to_date, present_date, platoon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (p.get('rank',''), p.get('last',''), p.get('first',''),
+                         p.get('status','present'), p.get('notes',''),
+                         p.get('from_date',''), p.get('to_date',''), p.get('present_date',''),
+                         p.get('platoon','2nd'))
+                    )
+                    restored_personnel += 1
+
         if 'settings' in payload:
             conn.execute('DELETE FROM settings')
             for s in payload['settings']:
                 conn.execute('INSERT INTO settings (key, value) VALUES (?, ?)', (s['key'], s['value']))
 
-        # Restore users (keep current admin if not in backup to avoid lockout)
-        if 'users' in payload:
+        restored_users = 0
+        if user['is_admin'] and 'users' in payload:
             current_uid = session.get('user_id')
             conn.execute('DELETE FROM users WHERE id != ?', (current_uid,))
             for u in payload['users']:
                 if u['id'] == current_uid:
-                    continue  # skip — current user already exists
+                    continue
                 conn.execute(
                     'INSERT OR REPLACE INTO users (id, username, password_hash, is_admin, platoons, pin_hash) VALUES (?, ?, ?, ?, ?, ?)',
                     (u['id'], u['username'], u.get('password_hash',''), u.get('is_admin',0),
                      u.get('platoons',''), u.get('pin_hash',''))
                 )
+                restored_users += 1
 
         conn.commit()
-        log_action('BACKUP_RESTORE', 'Full backup restored')
-        return jsonify({'success': True,
-                        'personnel': len(payload.get('personnel',[])),
-                        'users': len(payload.get('users',[]))})
+        log_action('BACKUP_RESTORE', f'Backup restored: {restored_personnel} personnel, {restored_users} users')
+        return jsonify({'success': True, 'personnel': restored_personnel, 'users': restored_users})
     except Exception as e:
         conn.rollback()
         return jsonify({'error': str(e)}), 500

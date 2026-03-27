@@ -1985,8 +1985,8 @@ async function loadHome() {
   // Show admin items only for admins
   const isAdmin = currentUser && currentUser.is_admin;
   document.getElementById('manageUsersMenuItem').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('backupMenuItem').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('restoreMenuItem').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('backupMenuItem').style.display = 'block';
+  document.getElementById('restoreMenuItem').style.display = 'block';
 
   // Filter platoon cards by access
   ['1st', '2nd', 'hq'].forEach(p => {
