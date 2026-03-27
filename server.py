@@ -122,31 +122,14 @@ def init_db():
         sys.stderr.write(f'{"=" * 52}\n\n')
         sys.stderr.flush()
 
-    # ── Seed 2nd Platoon ──
-    cur.execute('SELECT COUNT(*) FROM personnel WHERE platoon = "2nd"')
-    if cur.fetchone()[0] == 0:
-        seed_2nd = [
-            ('CW2', 'Smith',   'John',  'present', '', '', '', '2nd'),
-            ('CW2', 'Johnson', 'James', 'present', '', '', '', '2nd'),
-            ('WO1', 'Williams','Robert','present', '', '', '', '2nd'),
-        ]
-        cur.executemany(
-            'INSERT INTO personnel (rank, last, first, status, notes, from_date, to_date, platoon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            seed_2nd
-        )
-
-    # ── Seed 1st Platoon ──
-    cur.execute('SELECT COUNT(*) FROM personnel WHERE platoon = "1st"')
-    if cur.fetchone()[0] == 0:
-        seed_1st = [
-            ('SSG', 'Brown',  'Michael', 'present', '', '', '', '1st'),
-            ('SGT', 'Davis',  'David',   'present', '', '', '', '1st'),
-            ('SPC', 'Miller', 'Chris',   'present', '', '', '', '1st'),
-        ]
-        cur.executemany(
-            'INSERT INTO personnel (rank, last, first, status, notes, from_date, to_date, platoon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            seed_1st
-        )
+    # ── Seed placeholder data ──
+    for platoon in ('1st', '2nd', 'hq'):
+        cur.execute('SELECT COUNT(*) FROM personnel WHERE platoon = ?', (platoon,))
+        if cur.fetchone()[0] == 0:
+            cur.execute(
+                'INSERT INTO personnel (rank, last, first, status, platoon) VALUES (?, ?, ?, ?, ?)',
+                ('WO1', 'Smith', 'John', 'present', platoon)
+            )
 
     conn.commit()
     conn.close()
