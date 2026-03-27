@@ -1113,6 +1113,7 @@ function render() {
       const dateRange = (p.sched_from || p.sched_to)
         ? `${formatDateShort(p.sched_from)} - ${formatDateShort(p.sched_to)}` : '';
       const tr = document.createElement('tr');
+      tr.className = 'away-row';
       tr.innerHTML = `
         <td><input type="checkbox" class="row-checkbox" data-id="${p.id}" onchange="toggleSelectRow(${p.id})" ${bulkSelected.has(p.id)?'checked':''}></td>
         <td>${rowNum++}</td>
@@ -1124,8 +1125,8 @@ function render() {
           </div>
           ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
         </td>
-        <td><span style="font-size:0.8em;color:#b2bec3;font-style:italic;">Currently: ${p.status}</span></td>
         <td><span class="status-badge" style="background:#fdcb6e33;color:#fdcb6e;border:1px solid #fdcb6e;">Scheduled</span></td>
+        <td><span style="font-size:0.75em;color:#b2bec3;font-style:italic;white-space:nowrap;">Now: ${p.status}</span></td>
         <td><button class="btn-small btn-edit" onclick="openTdyLeave(${i})" title="Edit">&#9998;</button></td>
       `;
       body.appendChild(tr);
