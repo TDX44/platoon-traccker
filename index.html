@@ -271,51 +271,13 @@
     }
     tr.section-header td, tr.section-header-tdy td { padding: 0 !important; font-size: 0.8em; }
 
-    /* Away rows: CSS Grid — left col = rank+name+info, right col = stacked buttons */
-    tr.away-row {
-      display: grid !important;
-      grid-template-columns: auto 1fr auto !important;
-      grid-template-rows: auto auto auto !important;
-      padding: 8px !important; gap: 0 8px !important;
-      align-items: start !important;
-    }
-    /* hide checkbox (#1) and seq-number (#2) */
-    tr.away-row td:nth-child(1),
-    tr.away-row td:nth-child(2) { display: none !important; }
-    /* rank — left strip, spans all 3 rows */
-    tr.away-row td:nth-child(3) {
-      grid-column: 1; grid-row: 1 / 4;
-      align-self: start; padding: 0 4px 0 0 !important;
-    }
-    /* name/info — middle, spans all 3 rows */
-    tr.away-row td:nth-child(4) {
-      grid-column: 2; grid-row: 1 / 4;
-      min-width: 0; overflow: visible !important;
-    }
+    /* Away rows: name cell allows wrapping for notes/dates */
     tr.away-row .name-cell {
       white-space: normal !important; overflow: visible !important; text-overflow: unset !important;
       font-size: 0.82em !important; line-height: 1.4;
     }
     .away-notes { font-size: 0.72em !important; color: #b2bec3; white-space: normal !important; overflow: visible !important; }
     .away-dates { font-size: 0.68em !important; color: #74b9ff; white-space: normal !important; }
-    /* Mark Present — right col, row 1 */
-    tr.away-row td:nth-child(5) {
-      grid-column: 3; grid-row: 1;
-      display: flex !important; justify-content: flex-end !important;
-    }
-    tr.away-row td:nth-child(5) .present-btn { font-size: 0.68em !important; white-space: nowrap; }
-    /* status badge — right col, row 2 */
-    tr.away-row td:nth-child(6) {
-      grid-column: 3; grid-row: 2;
-      display: flex !important; justify-content: flex-end !important;
-      margin-top: 4px !important; padding: 0 !important;
-    }
-    /* actions — right col, row 3 */
-    tr.away-row td:nth-child(7) {
-      grid-column: 3; grid-row: 3;
-      display: flex !important; justify-content: flex-end !important;
-      margin-top: 4px !important; padding: 0 !important;
-    }
 
     /* Modal adjustments */
     .modal { padding: 15px; width: 100%; max-width: 95vw; }
@@ -1073,11 +1035,8 @@ function buildAwayRow(p, rowNum, todayStr) {
       ${p.notes ? `<div class="away-notes">${escapeHtml(p.notes)}</div>` : ''}
       ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
     </td>
-    <td><button class="present-btn inactive" onclick="markPresent(${i})">&#9675; Mark Present</button></td>
-    <td>
-      ${statusBadge(p.status)}
-      <button class="btn-tdy-leave" onclick="openTdyLeave(${i})" style="margin-left:6px;">Edit</button>
-    </td>
+    <td style="display:flex;align-items:center;gap:6px;">${statusBadge(p.status)}<button class="present-btn inactive" onclick="markPresent(${i})">&#9675; Mark Present</button></td>
+    <td><button class="btn-tdy-leave" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
     <td>
       <button class="btn-small btn-edit" onclick="openEditModal(${i})" title="Edit">&#9998;</button>
     </td>
