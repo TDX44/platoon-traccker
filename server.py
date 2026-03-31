@@ -136,6 +136,9 @@ def init_db():
     conn.close()
 
 
+init_db()
+
+
 # ── Audit log helper ──
 
 def log_action(action, details='', platoon=''):
