@@ -1,0 +1,8 @@
+accountability.db
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+docker-compose.yml
+.env

@@ -12,7 +12,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = os.environ.get('SECRET_KEY', 'platoon-tracker-change-in-production')
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'accountability.db')
+_default_data_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(os.environ.get('DATA_DIR', _default_data_dir), 'accountability.db')
 
 PLATOONS = {
     '1st': '1st Platoon Accountability',
