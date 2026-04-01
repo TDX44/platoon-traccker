@@ -566,8 +566,6 @@
 
     <!-- PIN login -->
     <div id="pinLoginForm" style="display:none;">
-      <label>Username</label>
-      <input type="text" id="pinUsername" placeholder="Username" autocomplete="username" />
       <div class="pin-display" id="pinDisplay">&#9679;&#9679;&#9679;&#9679;</div>
       <div class="pin-pad">
         <button onclick="pinPad('1')">1</button><button onclick="pinPad('2')">2</button><button onclick="pinPad('3')">3</button>
@@ -2430,16 +2428,11 @@ function pinBack() { pinBuffer = pinBuffer.slice(0, -1); updatePinDisplay('pinDi
 function pinClear() { pinBuffer = ''; updatePinDisplay('pinDisplay'); }
 
 async function doPinLogin() {
-  const username = document.getElementById('pinUsername').value.trim();
   const errEl = document.getElementById('loginError');
-  if (!username) {
-    errEl.textContent = 'Please enter your username.'; errEl.style.display = 'block';
-    pinBuffer = ''; updatePinDisplay('pinDisplay'); return;
-  }
   try {
     const res = await fetch('/api/pin-login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, pin: pinBuffer })
+      method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pinBuffer })
     });
     const data = await res.json();
     if (!res.ok) {

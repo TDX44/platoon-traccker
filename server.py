@@ -716,15 +716,18 @@ def check_session_timeout():
 @app.route('/api/pin-login', methods=['POST'])
 def pin_login():
     data = request.get_json()
-    username = (data.get('username') or '').strip().lower()
     pin = (data.get('pin') or '').strip()
-    if not username or not pin or len(pin) != 4 or not pin.isdigit():
+    if not pin or len(pin) != 4 or not pin.isdigit():
         return jsonify({'error': 'Invalid PIN format'}), 400
     conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE LOWER(username) = ?', (username,)).fetchone()
+    users = conn.execute('SELECT * FROM users WHERE pin_hash IS NOT NULL AND pin_hash != ""').fetchall()
     conn.close()
-    if not user or not user['pin_hash'] or not check_password_hash(user['pin_hash'], pin):
-        return jsonify({'error': 'Invalid username or PIN'}), 401
+    matches = [u for u in users if check_password_hash(u['pin_hash'], pin)]
+    if len(matches) > 1:
+        return jsonify({'error': 'PIN conflict — please use password login'}), 401
+    user = matches[0] if matches else None
+    if not user:
+        return jsonify({'error': 'Invalid PIN'}), 401
     session['user_id'] = user['id']
     session['_last_active'] = time.time()
     return jsonify({
