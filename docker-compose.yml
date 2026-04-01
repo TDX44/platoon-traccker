@@ -1,14 +1,25 @@
 services:
   app:
     build: .
-    ports:
-      - "5000:5000"
     env_file:
       - .env
     environment:
       DATA_DIR: /data
+      HTTPS: "true"
     volumes:
       - platoon_data:/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - app
     restart: unless-stopped
 
 volumes:
