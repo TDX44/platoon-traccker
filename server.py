@@ -236,6 +236,32 @@ def login():
     })
 
 
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
+    if len(username) < 3:
+        return jsonify({'error': 'Username must be at least 3 characters'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    conn = get_db()
+    existing = conn.execute('SELECT id FROM users WHERE LOWER(username) = ?', (username.lower(),)).fetchone()
+    if existing:
+        conn.close()
+        return jsonify({'error': 'Username already taken'}), 409
+    conn.execute(
+        'INSERT INTO users (username, password_hash, is_admin, platoons) VALUES (?, ?, 0, ?)',
+        (username, generate_password_hash(password), '')
+    )
+    conn.commit()
+    conn.close()
+    log_action('SIGNUP', f'New user registered: {username}')
+    return jsonify({'success': True})
+
+
 @app.route('/api/logout', methods=['POST'])
 def logout():
     session.clear()

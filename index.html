@@ -545,6 +545,23 @@
       <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
       <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
       <button class="btn-login" style="background:#636e72;margin-top:8px;" onclick="showPinLogin()">Use PIN Instead</button>
+      <div style="text-align:center;margin-top:14px;font-size:0.85em;color:#636e72;">
+        No account? <a href="#" onclick="showSignup();return false;" style="color:#00d4ff;text-decoration:none;">Request Access</a>
+      </div>
+    </div>
+
+    <!-- Signup form -->
+    <div id="signupForm" style="display:none;">
+      <div id="signupError" class="login-error" style="display:none"></div>
+      <div id="signupSuccess" style="display:none;background:#00b89422;border:1px solid #00b894;color:#00b894;padding:10px;border-radius:6px;margin-bottom:12px;font-size:0.9em;text-align:center;"></div>
+      <label>Username</label>
+      <input type="text" id="signupUsername" placeholder="Choose a username" autocomplete="username" />
+      <label>Password</label>
+      <input type="password" id="signupPassword" placeholder="At least 6 characters" autocomplete="new-password" />
+      <label>Confirm Password</label>
+      <input type="password" id="signupConfirm" placeholder="Repeat password" autocomplete="new-password" />
+      <button class="btn-login" id="signupBtn" onclick="doSignup()">Request Access</button>
+      <button class="btn-login" style="background:#636e72;margin-top:8px;" onclick="showPwLogin()">Back to Sign In</button>
     </div>
 
     <!-- PIN login -->
@@ -2343,8 +2360,57 @@ function showPinLogin() {
 }
 function showPwLogin() {
   document.getElementById('pinLoginForm').style.display = 'none';
+  document.getElementById('signupForm').style.display = 'none';
   document.getElementById('pwLoginForm').style.display = 'block';
   document.getElementById('loginSubtitle').textContent = 'Sign in to continue';
+  document.getElementById('loginError').style.display = 'none';
+}
+function showSignup() {
+  document.getElementById('pwLoginForm').style.display = 'none';
+  document.getElementById('pinLoginForm').style.display = 'none';
+  document.getElementById('signupForm').style.display = 'block';
+  document.getElementById('loginSubtitle').textContent = 'Create an account';
+  document.getElementById('signupError').style.display = 'none';
+  document.getElementById('signupSuccess').style.display = 'none';
+  document.getElementById('signupUsername').value = '';
+  document.getElementById('signupPassword').value = '';
+  document.getElementById('signupConfirm').value = '';
+}
+async function doSignup() {
+  const username = document.getElementById('signupUsername').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const confirm  = document.getElementById('signupConfirm').value;
+  const errEl    = document.getElementById('signupError');
+  const successEl = document.getElementById('signupSuccess');
+  const btn      = document.getElementById('signupBtn');
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+  if (!username || !password) {
+    errEl.textContent = 'All fields are required.'; errEl.style.display = 'block'; return;
+  }
+  if (password !== confirm) {
+    errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return;
+  }
+  btn.textContent = 'Requesting…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/signup', {
+      method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Signup failed.'; errEl.style.display = 'block';
+    } else {
+      successEl.textContent = 'Account created! An admin will grant you access. You can now sign in.';
+      successEl.style.display = 'block';
+      document.getElementById('signupUsername').value = '';
+      document.getElementById('signupPassword').value = '';
+      document.getElementById('signupConfirm').value = '';
+    }
+  } catch(e) {
+    errEl.textContent = 'Connection error.'; errEl.style.display = 'block';
+  }
+  btn.textContent = 'Request Access'; btn.disabled = false;
 }
 function updatePinDisplay(id) {
   const el = document.getElementById(id);
