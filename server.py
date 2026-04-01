@@ -111,7 +111,7 @@ def init_db():
     if cur.fetchone()[0] == 0:
         password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
         cur.execute(
-            'INSERT INTO users (username, password_hash, is_admin, platoons) VALUES (?, ?, 1, ?)',
+            'INSERT OR IGNORE INTO users (username, password_hash, is_admin, platoons) VALUES (?, ?, 1, ?)',
             ('admin', generate_password_hash(password), '*')
         )
         import sys
