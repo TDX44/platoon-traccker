@@ -530,7 +530,7 @@
 <body>
 
 <!-- ─── Login Screen ─── -->
-<div id="loginScreen">
+<div id="loginScreen" style="display:flex">
   <div class="login-card">
     <img src="/images/company-logo.png" alt="Unit Logo" style="width:140px;height:140px;object-fit:contain;margin:0 auto 12px;display:block;">
     <div class="login-title">Platoon Accountability</div>
@@ -564,7 +564,7 @@
 </div>
 
 <!-- ─── Home Screen ─── -->
-<div id="homeScreen">
+<div id="homeScreen" style="display:none">
   <div class="hamburger-wrap">
     <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleHamburger()" aria-label="Menu">&#9776;</button>
     <div class="hamburger-dropdown" id="hamburgerDropdown">
@@ -2116,6 +2116,7 @@ async function initApp() {
 let currentPlatoon = '';
 
 async function loadHome() {
+  if (!currentUser) { showLoginScreen(); return; }
   document.getElementById('homeScreen').style.display = 'flex';
   document.getElementById('platoonScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'none';
