@@ -2,7 +2,8 @@ FROM python:3.11-alpine
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn \
-    && addgroup -S appgroup && adduser -S appuser -G appgroup
+    && addgroup -g 1000 -S appgroup \
+    && adduser -S -D -H -u 1000 -G appgroup appuser
 COPY . .
 RUN mkdir -p /data && chown appuser:appgroup /data
 ENV DATA_DIR=/data
