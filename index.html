@@ -338,7 +338,7 @@
   .btn-login:disabled { background: #555; cursor: default; }
   .login-card label { display: block; margin-bottom: 4px; font-size: 0.9em; color: #aaa; }
   .login-card input { width: 100%; padding: 9px 10px; margin-bottom: 14px; border: 1px solid #444; border-radius: 5px; background: #1a1a2e; color: #e0e0e0; font-size: 0.95em; }
-  .login-note { text-align: center; color: #9ba7c4; font-size: 0.84em; line-height: 1.55; max-width: 33ch; }
+  .login-note { display: none; }
   #clerkAuthMount { min-height: 320px; width: 100%; display: flex; justify-content: center; }
   .login-status { text-align: center; color: #8aa0b6; font-size: 0.82em; min-height: 1.2em; }
   .user-row-meta { font-size: 0.78em; color: #8aa0b6; margin-top: 2px; font-weight: 400; }
@@ -559,7 +559,7 @@
     </div>
     <div id="clerkAuthMount"></div>
     <div class="login-status" id="loginStatus">Loading Clerk sign-in…</div>
-    <div class="login-note" id="loginNote">Use your Clerk account to sign in. New users will appear in the app automatically, and an admin can grant platoon access afterward.</div>
+    <div class="login-note" id="loginNote"></div>
   </div>
 </div>
 
@@ -2149,7 +2149,7 @@ function mountClerkSignIn() {
       afterSignInUrl: window.location.href,
       afterSignUpUrl: window.location.href,
     });
-    setLoginStatus('Use Clerk to sign in or create your account.');
+    setLoginStatus('');
   } catch (err) {
     setLoginStatus(err.message || 'Failed to render Clerk sign-in.', true);
     throw err;
