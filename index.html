@@ -2348,6 +2348,7 @@ async function loadHome() {
 function selectPlatoon(platoon) {
   currentPlatoon = platoon;
   history.pushState({ platoon }, '', `?platoon=${platoon}`);
+  document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('homeScreen').style.display = 'none';
   document.getElementById('platoonScreen').style.display = 'block';
   const auditBtn = document.getElementById('auditLogBtn');
