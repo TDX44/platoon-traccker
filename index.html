@@ -405,6 +405,7 @@
       radial-gradient(circle at top, rgba(9,132,227,0.18), transparent 36%),
       radial-gradient(circle at bottom, rgba(0,212,255,0.08), transparent 34%);
   }
+  body.app-authenticated #loginScreen { display: none !important; }
   .login-card {
     width: 430px; max-width: 100%;
     display: flex; flex-direction: column; align-items: center;
@@ -638,7 +639,7 @@
 <body>
 
 <!-- ─── Login Screen ─── -->
-<div id="loginScreen" style="display:flex">
+<div id="loginScreen">
   <div class="login-card">
     <div class="login-brand">
       <img src="/images/company-logo.png" alt="Unit Logo" style="width:124px;height:124px;object-fit:contain;margin:0 auto 10px;display:block;">
@@ -2133,8 +2134,16 @@ document.getElementById('reportModal').addEventListener('click', function(e) { i
 document.getElementById('addFirst').addEventListener('keydown', function(e) { if (e.key === 'Enter') savePerson(); });
 
 // ─── Auth ───
+function showAppScreen(screen) {
+  document.body.classList.add('app-authenticated');
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('homeScreen').style.display = screen === 'home' ? 'flex' : 'none';
+  document.getElementById('platoonScreen').style.display = screen === 'platoon' ? 'block' : 'none';
+}
+
 function showLoginScreen() {
   currentUser = null;
+  document.body.classList.remove('app-authenticated');
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('homeScreen').style.display = 'none';
   document.getElementById('platoonScreen').style.display = 'none';
@@ -2289,6 +2298,8 @@ function userHasAccess(platoon) {
 
 function routeAfterLogin() {
   resetSessionTimer();
+  document.body.classList.add('app-authenticated');
+  document.getElementById('loginScreen').style.display = 'none';
   const p = new URLSearchParams(window.location.search).get('platoon');
   if (p && ['1st', '2nd', 'hq'].includes(p) && userHasAccess(p)) {
     selectPlatoon(p);
@@ -2320,9 +2331,7 @@ let currentPlatoon = '';
 
 async function loadHome() {
   if (!currentUser) { showLoginScreen(); return; }
-  document.getElementById('homeScreen').style.display = 'flex';
-  document.getElementById('platoonScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'none';
+  showAppScreen('home');
 
   // Show admin items only for admins
   const isAdmin = currentUser && currentUser.is_admin;
@@ -2348,9 +2357,7 @@ async function loadHome() {
 function selectPlatoon(platoon) {
   currentPlatoon = platoon;
   history.pushState({ platoon }, '', `?platoon=${platoon}`);
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('homeScreen').style.display = 'none';
-  document.getElementById('platoonScreen').style.display = 'block';
+  showAppScreen('platoon');
   const auditBtn = document.getElementById('auditLogBtn');
   if (auditBtn) auditBtn.style.display = currentUser && currentUser.is_admin ? 'inline-block' : 'none';
   load();
