@@ -142,7 +142,12 @@ def init_db():
         if col not in ucols:
             cur.execute(f'ALTER TABLE users ADD COLUMN {col} TEXT DEFAULT ""')
 
-    cur.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_clerk_user_id ON users(clerk_user_id)')
+    # Only enforce uniqueness for actual Clerk IDs; legacy rows may still have empty values.
+    cur.execute('DROP INDEX IF EXISTS idx_users_clerk_user_id')
+    cur.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_clerk_user_id "
+        "ON users(clerk_user_id) WHERE clerk_user_id IS NOT NULL AND clerk_user_id != ''"
+    )
 
     # Scheduled TDY/Leave columns
     for col, default in [('sched_status',''), ('sched_from',''), ('sched_to',''), ('sched_notes','')]:
