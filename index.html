@@ -326,6 +326,7 @@
   .login-card input { width: 100%; padding: 9px 10px; margin-bottom: 14px; border: 1px solid #444; border-radius: 5px; background: #1a1a2e; color: #e0e0e0; font-size: 0.95em; }
   .login-note { text-align: center; color: #b2bec3; font-size: 0.85em; margin-top: 14px; line-height: 1.5; }
   #clerkAuthMount { min-height: 320px; }
+  .login-status { text-align: center; color: #8aa0b6; font-size: 0.82em; margin-top: 10px; }
   .user-row-meta { font-size: 0.78em; color: #8aa0b6; margin-top: 2px; font-weight: 400; }
   .user-row-name-block { flex: 1; min-width: 0; }
 
@@ -541,6 +542,7 @@
     <div class="login-subtitle" id="loginSubtitle">Sign in to continue</div>
     <div id="loginError" class="login-error" style="display:none"></div>
     <div id="clerkAuthMount"></div>
+    <div class="login-status" id="loginStatus">Loading Clerk sign-in…</div>
     <div class="login-note" id="loginNote">Use your Clerk account to sign in. New users will appear in the app automatically, and an admin can grant platoon access afterward.</div>
   </div>
 </div>
@@ -2048,6 +2050,38 @@ async function loadAuthConfig() {
   return authConfig;
 }
 
+function setLoginStatus(message, isError = false) {
+  const statusEl = document.getElementById('loginStatus');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.style.color = isError ? '#ff7675' : '#8aa0b6';
+}
+
+async function loadClerkScript(url) {
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-clerk-src="${url}"]`);
+    if (existing) {
+      if (window.Clerk) {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Unable to load Clerk from ${url}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.dataset.clerkScript = 'true';
+    script.dataset.clerkSrc = url;
+    script.src = url;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Unable to load Clerk from ${url}`));
+    document.head.appendChild(script);
+  });
+}
+
 async function ensureClerk() {
   if (clerkReadyPromise) return clerkReadyPromise;
   clerkReadyPromise = (async () => {
@@ -2057,26 +2091,27 @@ async function ensureClerk() {
     }
 
     if (!window.Clerk) {
-      await new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[data-clerk-script="true"]');
-        if (existing) {
-          existing.addEventListener('load', resolve, { once: true });
-          existing.addEventListener('error', () => reject(new Error('Unable to load Clerk script.')), { once: true });
-          return;
+      const urls = [
+        'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js',
+        `${config.frontend_api_url.replace(/\/$/, '')}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`,
+      ];
+      let lastError = null;
+      for (const url of urls) {
+        try {
+          setLoginStatus(`Loading Clerk sign-in from ${new URL(url).host}…`);
+          await loadClerkScript(url);
+          break;
+        } catch (err) {
+          lastError = err;
         }
-
-        const script = document.createElement('script');
-        script.async = true;
-        script.crossOrigin = 'anonymous';
-        script.dataset.clerkScript = 'true';
-        script.src = `${config.frontend_api_url.replace(/\/$/, '')}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`;
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Unable to load Clerk script.'));
-        document.head.appendChild(script);
-      });
+      }
+      if (!window.Clerk) {
+        throw lastError || new Error('Unable to load Clerk script.');
+      }
     }
 
     clerk = window.Clerk;
+    setLoginStatus('Initializing Clerk…');
     await clerk.load({ publishableKey: config.publishable_key });
     return clerk;
   })().catch(err => {
@@ -2090,20 +2125,27 @@ function mountClerkSignIn() {
   const mount = document.getElementById('clerkAuthMount');
   if (!mount || !clerk) return;
   mount.innerHTML = '';
-  clerk.mountSignIn(mount, {
-    appearance: {
-      variables: {
-        colorPrimary: '#0984e3',
-        colorBackground: '#2d2d44',
-        colorInputBackground: '#1a1a2e',
-        colorInputText: '#e0e0e0',
-        colorText: '#e0e0e0',
-        colorNeutral: '#b2bec3',
+  setLoginStatus('Rendering Clerk sign-in…');
+  try {
+    clerk.mountSignIn(mount, {
+      appearance: {
+        variables: {
+          colorPrimary: '#0984e3',
+          colorBackground: '#2d2d44',
+          colorInputBackground: '#1a1a2e',
+          colorInputText: '#e0e0e0',
+          colorText: '#e0e0e0',
+          colorNeutral: '#b2bec3',
+        },
       },
-    },
-    afterSignInUrl: window.location.href,
-    afterSignUpUrl: window.location.href,
-  });
+      afterSignInUrl: window.location.href,
+      afterSignUpUrl: window.location.href,
+    });
+    setLoginStatus('Use Clerk to sign in or create your account.');
+  } catch (err) {
+    setLoginStatus(err.message || 'Failed to render Clerk sign-in.', true);
+    throw err;
+  }
 }
 
 async function syncClerkUser() {
