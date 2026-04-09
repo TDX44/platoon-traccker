@@ -341,6 +341,15 @@ def sync_clerk_user(payload):
     conn = get_db()
     try:
         existing = conn.execute('SELECT * FROM users WHERE clerk_user_id = ?', (clerk_user_id,)).fetchone()
+        username_conflict = conn.execute(
+            'SELECT * FROM users WHERE LOWER(username) = ?',
+            (username.lower(),)
+        ).fetchone() if username else None
+        email_conflict = conn.execute(
+            'SELECT * FROM users WHERE LOWER(email) = ?',
+            (email,)
+        ).fetchone() if email else None
+
         if existing:
             conn.execute(
                 'UPDATE users SET username = ?, email = ?, full_name = ? WHERE clerk_user_id = ?',
@@ -349,16 +358,11 @@ def sync_clerk_user(payload):
         else:
             is_admin = 1 if _should_auto_grant_admin(conn, email) else 0
             legacy = None
-            if email:
-                legacy = conn.execute(
-                    'SELECT * FROM users WHERE LOWER(email) = ? AND (clerk_user_id IS NULL OR clerk_user_id = "")',
-                    (email,)
-                ).fetchone()
-            if not legacy and username:
-                legacy = conn.execute(
-                    'SELECT * FROM users WHERE LOWER(username) = ? AND (clerk_user_id IS NULL OR clerk_user_id = "")',
-                    (username.lower(),)
-                ).fetchone()
+
+            for candidate in (email_conflict, username_conflict):
+                if candidate and not candidate['clerk_user_id']:
+                    legacy = candidate
+                    break
 
             if legacy:
                 platoons = legacy['platoons']
@@ -372,6 +376,8 @@ def sync_clerk_user(payload):
                      clerk_user_id, email, full_name, legacy['id'])
                 )
             else:
+                if username_conflict and username_conflict['clerk_user_id'] and username_conflict['clerk_user_id'] != clerk_user_id:
+                    username = email or f'user-{clerk_user_id[:8]}'
                 platoons = '*' if is_admin else ''
                 conn.execute(
                     'INSERT INTO users (username, password_hash, is_admin, platoons, clerk_user_id, email, full_name) '
