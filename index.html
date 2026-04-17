@@ -1360,9 +1360,9 @@
       display: grid !important;
       grid-template-columns: auto minmax(0, 1fr) max-content max-content;
       grid-template-areas:
-        "rank name primary secondary";
+        "rank name secondary primary";
       align-items: start;
-      column-gap: 7px;
+      column-gap: 5px;
       row-gap: 4px;
       margin-bottom: 7px;
       padding: 8px;
@@ -1420,15 +1420,20 @@
     }
     .rank-cell {
       font-size: 0.76rem !important;
-      min-width: 38px;
+      min-width: 30px;
+      max-width: 42px;
       padding-top: 3px !important;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
     }
     .name-cell {
       display: block;
       font-size: 0.94rem !important;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap !important;
+      overflow: visible;
+      text-overflow: clip;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
     }
     .edit-name-trigger {
       cursor: pointer;
@@ -1466,17 +1471,19 @@
     .present-btn {
       width: auto;
       min-width: 0;
-      min-height: 36px;
-      padding: 7px 10px;
-      font-size: 0.74rem;
+      min-height: 34px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
       white-space: nowrap;
     }
     .btn-tdy-leave {
       width: auto;
       min-width: 0;
-      min-height: 36px;
-      padding: 7px 10px;
-      font-size: 0.74rem;
+      min-height: 34px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
       color: var(--theme_action);
     }
     .mobile-only-action {
@@ -1536,7 +1543,7 @@
       grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         "rank name name"
-        "primary primary secondary";
+        "secondary primary primary";
       row-gap: 7px;
     }
     .mobile-primary-action-cell,
