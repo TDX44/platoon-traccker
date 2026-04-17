@@ -726,6 +726,13 @@ def add_duty():
 def delete_duty(entry_id):
     conn = get_db()
     row = conn.execute('SELECT * FROM duty_roster WHERE id = ?', (entry_id,)).fetchone()
+    user = get_current_user()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    if not has_platoon_access(user, row['platoon']):
+        conn.close()
+        return jsonify({'error': 'Forbidden'}), 403
     if row:
         log_action('DELETE_DUTY', f'{row["duty_type"]} on {row["date"]}', row['platoon'])
     conn.execute('DELETE FROM duty_roster WHERE id = ?', (entry_id,))

@@ -757,6 +757,7 @@
   body.dark-mode .notes-preview,
   body.dark-mode .report-text,
   body.dark-mode #resetSummary,
+  body.dark-mode .insight-card,
   body.dark-mode #futureScheduleNotice {
     background: var(--theme_surface-soft) !important;
     border-color: var(--theme_border) !important;
@@ -935,6 +936,45 @@
   .mobile-more-actions {
     display: none;
   }
+  .accountability-insights {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 14px;
+  }
+  .insight-card {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--theme_border);
+    border-radius: var(--theme_radius);
+    background: var(--theme_surface);
+    color: var(--theme_text);
+    box-shadow: var(--theme_shadow-soft);
+  }
+  .insight-card strong {
+    display: block;
+    font-size: 1.35rem;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .insight-card span {
+    display: block;
+    color: var(--theme_text-weak);
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .insight-card small {
+    display: block;
+    margin-top: 7px;
+    color: var(--theme_text-muted);
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+  .insight-good strong { color: var(--theme_success); }
+  .insight-warn strong { color: #b7791f; }
+  .insight-action strong { color: var(--theme_action); }
+  .insight-danger strong { color: var(--theme_danger); }
 
   .search-wrap {
     margin: 16px 0 12px;
@@ -952,6 +992,49 @@
     box-shadow: 0 0 0 3px rgba(27,97,201,0.12);
   }
   .search-input::placeholder { color: var(--theme_text-weak); }
+  .quick-filter-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .quick-filter {
+    min-height: 36px;
+    padding: 8px 11px;
+    border: 1px solid var(--theme_border);
+    border-radius: 6px;
+    background: var(--theme_surface);
+    color: var(--theme_text);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .quick-filter:hover {
+    border-color: rgba(27,97,201,0.32);
+    background: var(--theme_surface-blue);
+    color: var(--theme_action);
+  }
+  .quick-filter.active {
+    background: var(--theme_action);
+    border-color: var(--theme_action);
+    color: #fff;
+  }
+  .quick-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    min-height: 20px;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.08);
+    font-size: 0.74rem;
+  }
+  .quick-filter.active .quick-filter-count {
+    background: rgba(255,255,255,0.18);
+  }
 
   .bulk-bar,
   body.light-mode .bulk-bar {
@@ -1180,6 +1263,42 @@
   .history-item-ts,
   .audit-ts { color: var(--theme_text-weak); }
   .audit-row { border-bottom-color: var(--theme_border); }
+  .duty-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .duty-form .full-width {
+    grid-column: 1 / -1;
+  }
+  .duty-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--theme_border);
+    border-radius: var(--theme_radius);
+    background: var(--theme_surface-soft);
+  }
+  .duty-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--theme_border);
+  }
+  .duty-row:last-child {
+    border-bottom: 0;
+  }
+  .duty-title {
+    color: var(--theme_text);
+    font-weight: 700;
+  }
+  .duty-meta {
+    color: var(--theme_text-muted);
+    font-size: 0.78rem;
+    margin-top: 3px;
+  }
 
   #futureScheduleNotice {
     background: #f3f7ff !important;
@@ -1266,6 +1385,23 @@
     }
     .stat .num { font-size: 1.18rem; }
     .stat .label { font-size: 0.66rem; }
+    .accountability-insights {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .insight-card {
+      padding: 10px;
+    }
+    .insight-card strong {
+      font-size: 1.12rem;
+    }
+    .insight-card span {
+      font-size: 0.66rem;
+    }
+    .insight-card small {
+      font-size: 0.72rem;
+    }
     .controls {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1333,6 +1469,21 @@
     #clearSearchBtn {
       width: 44px;
       padding: 0;
+    }
+    .quick-filter-wrap {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 6px;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      scrollbar-width: thin;
+    }
+    .quick-filter {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 9px;
+      font-size: 0.72rem;
+      white-space: nowrap;
     }
     .bulk-bar.visible {
       display: grid;
@@ -1524,6 +1675,13 @@
     .report-buttons button {
       min-height: 44px;
     }
+    .duty-form {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .duty-row {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 380px) {
@@ -1630,6 +1788,7 @@
 <div id="platoonScreen">
 <input type="text" class="edit-unit-name" id="unitName" value="" />
 <div class="stats-bar" id="statsBar"></div>
+<div class="accountability-insights" id="accountabilityInsights"></div>
 <div class="controls">
   <button class="btn-back" onclick="goHome()">&#8592; Platoons</button>
   <button class="btn-add" onclick="openAddModal()">+ Add Person</button>
@@ -1638,6 +1797,7 @@
   <button class="btn-generate" onclick="generateReport()">Generate Report</button>
 </div>
 <div class="controls controls-secondary" style="margin-top:6px;">
+  <button class="btn-reset" onclick="openDutyRoster()">Duty</button>
   <button class="btn-reset" onclick="openHistory()">&#128337; History</button>
   <button class="btn-reset" onclick="exportCSV()">&#128190; CSV</button>
   <button class="btn-reset" id="auditLogBtn" onclick="openAuditLog()" style="display:none">&#128269; Audit</button>
@@ -1647,6 +1807,7 @@
   <div class="mobile-more-grid">
     <button class="btn-import" onclick="openImportModal()">&#8595; Import List</button>
     <button class="btn-reset" onclick="resetDay()">Reset Day</button>
+    <button class="btn-reset" onclick="openDutyRoster()">Duty</button>
     <button class="btn-reset" onclick="openHistory()">&#128337; History</button>
     <button class="btn-reset" onclick="exportCSV()">&#128190; CSV</button>
     <button class="btn-reset" id="mobileAuditLogBtn" onclick="openAuditLog()" style="display:none">&#128269; Audit</button>
@@ -1656,6 +1817,7 @@
   <input type="text" class="search-input" id="searchInput" placeholder="&#128269; Search by name, rank, or notes…" oninput="onSearch()">
   <button class="btn-small btn-danger" id="clearSearchBtn" onclick="clearSearch()" style="display:none">&#10005;</button>
 </div>
+<div class="quick-filter-wrap" id="quickFilterWrap" aria-label="Roster filters"></div>
 <div class="bulk-bar" id="bulkBar">
   <span class="bulk-bar-label"><span id="bulkCount">0</span> selected</span>
   <select id="bulkStatusSelect" style="background:#1a1a2e;color:#e0e0e0;border:1px solid #444;border-radius:4px;padding:5px 8px;font-size:0.85em;">
@@ -1839,6 +2001,41 @@
   </div>
 </div>
 
+<!-- Duty Roster Modal -->
+<div class="modal-overlay" id="dutyModal">
+  <div class="modal modal-wide">
+    <h2>Duty Roster</h2>
+    <div class="duty-form">
+      <div>
+        <label>Date</label>
+        <input type="date" id="dutyDate" onchange="loadDutyRoster()">
+      </div>
+      <div>
+        <label>Duty</label>
+        <select id="dutyType">
+          <option value="CQ">CQ</option>
+          <option value="Staff Duty">Staff Duty</option>
+          <option value="Runner">Runner</option>
+          <option value="Driver">Driver</option>
+        </select>
+      </div>
+      <div class="full-width">
+        <label>Person</label>
+        <select id="dutyPerson"></select>
+      </div>
+      <div class="full-width">
+        <label>Notes</label>
+        <input type="text" id="dutyNotes" placeholder="Optional">
+      </div>
+    </div>
+    <button class="btn-small btn-add" onclick="addDutyEntry()" style="width:100%;margin-bottom:12px;">Add Duty</button>
+    <div class="duty-list" id="dutyList"></div>
+    <div class="modal-buttons">
+      <button class="btn-small btn-danger" onclick="closeDutyRoster()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- Audit Log Modal -->
 <div class="modal-overlay" id="auditModal">
   <div class="modal" style="width:680px;max-width:95vw;">
@@ -1879,6 +2076,8 @@ let sortCol = 'rank';
 let sortDir = 1;
 let bulkSelected = new Set();
 let historyViewData = null;
+let activeQuickFilter = 'all';
+let currentDutyEntries = [];
 
 // ─── API helpers ───
 const API = '/api';
@@ -1969,6 +2168,126 @@ function isUnaccounted(p) {
   return p.status === 'present' && p.present_date !== getTodayStr();
 }
 
+function statusFilterMatches(p, filter) {
+  if (filter === 'all') return true;
+  if (filter === 'unaccounted') return isUnaccounted(p);
+  if (filter === 'present') return isPresentToday(p);
+  if (filter === 'leave') return p.status === 'leave' || p.status === 'pass';
+  if (filter === 'tdy') return p.status === 'tdy';
+  if (filter === 'other') return p.status === 'other' || p.status === 'ftr';
+  if (filter === 'scheduled') return !!p.sched_status;
+  if (filter === 'loan') return p.status === 'loan';
+  return true;
+}
+
+function personLabel(p) {
+  return `${p.rank} ${p.last}`;
+}
+
+function summarizePeople(list) {
+  if (!list.length) return '';
+  const names = list.slice(0, 3).map(personLabel).join(', ');
+  const remaining = list.length - 3;
+  return remaining > 0 ? `${names} +${remaining}` : names;
+}
+
+function addDaysStr(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderQuickFilters(counts, total) {
+  const wrap = document.getElementById('quickFilterWrap');
+  if (!wrap) return;
+  const filters = [
+    ['all', 'All', personnel.length],
+    ['unaccounted', 'Needs', counts.unaccounted || 0],
+    ['present', 'Present', counts.present || 0],
+    ['leave', 'Leave/Pass', (counts.leave || 0) + (counts.pass || 0)],
+    ['tdy', 'TDY', counts.tdy || 0],
+    ['other', 'Other/FTR', (counts.other || 0) + (counts.ftr || 0)],
+    ['scheduled', 'Scheduled', counts.scheduled || 0],
+    ['loan', 'Loan', counts.loan || 0]
+  ];
+  wrap.innerHTML = filters.map(([key, label, count]) => `
+    <button class="quick-filter ${activeQuickFilter === key ? 'active' : ''}" type="button" onclick="setQuickFilter('${key}')" aria-pressed="${activeQuickFilter === key}">
+      ${label}<span class="quick-filter-count">${count}</span>
+    </button>
+  `).join('');
+}
+
+function renderInsights(counts, total, todayStr) {
+  const el = document.getElementById('accountabilityInsights');
+  if (!el) return;
+
+  const accounted = Math.max(0, total - (counts.unaccounted || 0));
+  const percent = total ? Math.round((accounted / total) * 100) : 100;
+  const nextWeek = addDaysStr(todayStr, 7);
+  const unaccounted = personnel.filter(p => p.status !== 'loan' && isUnaccounted(p));
+  const returningToday = personnel.filter(p => p.status !== 'present' && p.to === todayStr);
+  const returningSoon = personnel.filter(p => p.status !== 'present' && p.to && p.to > todayStr && p.to <= nextWeek);
+  const scheduledSoon = personnel.filter(p => p.sched_status && p.sched_from && p.sched_from >= todayStr && p.sched_from <= nextWeek);
+  const ftr = personnel.filter(p => p.status === 'ftr');
+
+  const cards = [
+    {
+      cls: percent === 100 ? 'insight-good' : 'insight-warn',
+      value: `${percent}%`,
+      label: 'Accounted',
+      detail: total ? `${accounted} of ${total}` : 'No assigned personnel'
+    },
+    {
+      cls: unaccounted.length ? 'insight-danger' : 'insight-good',
+      value: unaccounted.length,
+      label: 'Needs accountability',
+      detail: unaccounted.length ? summarizePeople(unaccounted) : 'Clear'
+    },
+    {
+      cls: returningToday.length ? 'insight-action' : 'insight-good',
+      value: returningToday.length,
+      label: 'Returning today',
+      detail: returningToday.length ? summarizePeople(returningToday) : 'None'
+    },
+    {
+      cls: scheduledSoon.length ? 'insight-action' : 'insight-good',
+      value: scheduledSoon.length,
+      label: 'Scheduled soon',
+      detail: scheduledSoon.length ? summarizePeople(scheduledSoon) : `Through ${formatDateShort(nextWeek)}`
+    }
+  ];
+
+  if (returningSoon.length) {
+    cards.push({
+      cls: 'insight-action',
+      value: returningSoon.length,
+      label: 'Returning this week',
+      detail: summarizePeople(returningSoon)
+    });
+  }
+  if (ftr.length) {
+    cards.push({
+      cls: 'insight-danger',
+      value: ftr.length,
+      label: 'FTR',
+      detail: summarizePeople(ftr)
+    });
+  }
+
+  el.innerHTML = cards.map(card => `
+    <div class="insight-card ${card.cls}">
+      <strong>${card.value}</strong>
+      <span>${card.label}</span>
+      <small>${escapeHtml(card.detail)}</small>
+    </div>
+  `).join('');
+}
+
+function setQuickFilter(filter) {
+  activeQuickFilter = filter;
+  render();
+}
+
 function formatDateShort(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
@@ -2013,12 +2332,13 @@ function render() {
   const term = getSearchTerm();
   const clearBtn = document.getElementById('clearSearchBtn');
   if (clearBtn) clearBtn.style.display = term ? 'inline-block' : 'none';
-  const visible = term ? personnel.filter(p =>
+  const searchVisible = term ? personnel.filter(p =>
     p.rank.toLowerCase().includes(term) ||
     p.last.toLowerCase().includes(term) ||
     p.first.toLowerCase().includes(term) ||
     (p.notes || '').toLowerCase().includes(term)
   ) : personnel;
+  const visible = searchVisible.filter(p => statusFilterMatches(p, activeQuickFilter));
 
   // Build section lists with sort applied
   const unaccountedList = applySort(visible.filter(p => isUnaccounted(p)));
@@ -2046,6 +2366,10 @@ function render() {
     else if (isUnaccounted(p)) { counts.unaccounted++; }
     else { counts[p.status] = (counts[p.status] || 0) + 1; }
   });
+  const total = personnel.filter(p => p.status !== 'loan').length;
+
+  renderInsights(counts, total, todayStr);
+  renderQuickFilters(counts, total);
 
   let rowNum = 1;
 
@@ -2185,7 +2509,6 @@ function render() {
     });
   }
 
-  const total = personnel.filter(p => p.status !== 'loan').length;
   const leavePass = (counts.leave || 0) + (counts.pass || 0);
   const awayTotal = leavePass + (counts.tdy || 0) + (counts.other || 0) + (counts.ftr || 0);
   document.getElementById('statsBar').innerHTML = `
@@ -2200,6 +2523,13 @@ function render() {
     ${counts.loan ? `<div class="stat stat-detail-mobile-hidden"><div class="num" style="color:#a29bfe">${counts.loan}</div><div class="label">On Loan</div></div>` : ''}
     ${counts.loan ? `<div class="stat stat-mobile-away"><div class="num" style="color:#a29bfe">${counts.loan}</div><div class="label">On Loan</div></div>` : ''}
   `;
+
+  if (rowNum === 1) {
+    const sep = document.createElement('tr');
+    sep.className = 'section-header';
+    sep.innerHTML = `<td colspan="7">No matching personnel</td>`;
+    body.appendChild(sep);
+  }
 
   updateSortHeaders();
   updateBulkBar();
@@ -3053,6 +3383,99 @@ function downloadHistoryReport() {
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ─── Duty roster ───
+function openDutyRoster() {
+  const dateEl = document.getElementById('dutyDate');
+  if (dateEl && !dateEl.value) dateEl.value = getTodayStr();
+  renderDutyPersonOptions();
+  document.getElementById('dutyModal').classList.add('active');
+  loadDutyRoster();
+}
+
+function closeDutyRoster() {
+  document.getElementById('dutyModal').classList.remove('active');
+}
+
+function renderDutyPersonOptions() {
+  const select = document.getElementById('dutyPerson');
+  if (!select) return;
+  const available = personnel.filter(p => p.status !== 'loan').sort(rankSort);
+  if (!available.length) {
+    select.innerHTML = '<option value="">No personnel loaded</option>';
+    return;
+  }
+  select.innerHTML = available.map(p => (
+    `<option value="${p.id}">${escapeHtml(p.rank)} ${escapeHtml(p.last)}, ${escapeHtml(p.first)}</option>`
+  )).join('');
+}
+
+async function loadDutyRoster() {
+  const date = document.getElementById('dutyDate').value || getTodayStr();
+  const list = document.getElementById('dutyList');
+  if (!list) return;
+  list.innerHTML = '<div class="duty-row"><div class="duty-meta">Loading duty...</div></div>';
+  const rows = await api('GET', `/duty?platoon=${currentPlatoon}&date=${encodeURIComponent(date)}`);
+  currentDutyEntries = Array.isArray(rows) ? rows : [];
+  renderDutyRoster();
+}
+
+function renderDutyRoster() {
+  const list = document.getElementById('dutyList');
+  if (!list) return;
+  if (!currentDutyEntries.length) {
+    list.innerHTML = '<div class="duty-row"><div class="duty-meta">No duty entered for this date.</div></div>';
+    return;
+  }
+  list.innerHTML = currentDutyEntries.map(row => {
+    const name = [row.rank, row.last && `${row.last},`, row.first].filter(Boolean).join(' ');
+    return `
+      <div class="duty-row">
+        <div>
+          <div class="duty-title">${escapeHtml(row.duty_type || 'Duty')} · ${escapeHtml(name || 'Unassigned')}</div>
+          <div class="duty-meta">${escapeHtml(row.notes || 'No notes')}</div>
+        </div>
+        <button class="btn-small btn-danger" onclick="deleteDutyEntry(${row.id})">Remove</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addDutyEntry() {
+  const personId = parseInt(document.getElementById('dutyPerson').value, 10);
+  const person = personnel.find(p => p.id === personId);
+  if (!person) {
+    alert('Select a person for duty.');
+    return;
+  }
+  const payload = {
+    platoon: currentPlatoon,
+    date: document.getElementById('dutyDate').value || getTodayStr(),
+    duty_type: document.getElementById('dutyType').value || 'CQ',
+    rank: person.rank,
+    last: person.last,
+    first: person.first,
+    notes: document.getElementById('dutyNotes').value.trim()
+  };
+  const row = await api('POST', '/duty', payload);
+  if (!row || row.error) {
+    alert(row && row.error ? row.error : 'Could not add duty.');
+    return;
+  }
+  document.getElementById('dutyNotes').value = '';
+  await loadDutyRoster();
+}
+
+async function deleteDutyEntry(id) {
+  if (!confirm('Remove this duty entry?')) return;
+  const res = await api('DELETE', `/duty/${id}`);
+  if (res && res.error) {
+    alert(res.error);
+    return;
+  }
+  currentDutyEntries = currentDutyEntries.filter(row => row.id !== id);
+  renderDutyRoster();
 }
 
 // ─── Audit log ───
