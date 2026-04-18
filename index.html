@@ -1042,11 +1042,17 @@
     padding: 8px 10px;
   }
   .training-table-wrap {
-    max-height: calc(100vh - 330px);
-    min-height: 320px;
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
   .training-table {
     min-width: 1320px;
+    border: 1px solid var(--theme_border);
   }
   .training-table th,
   .training-table td {
@@ -1153,6 +1159,24 @@
   .training-report-box {
     width: min(980px, 96vw);
   }
+  .training-report-panel {
+    display: none;
+    margin-top: 20px;
+  }
+  .training-report-panel.active {
+    display: block;
+  }
+  .training-report-panel h2 {
+    color: var(--theme_text);
+    font-size: 1.45rem;
+    margin: 0 0 10px;
+  }
+  .training-report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
   .training-report {
     display: grid;
     gap: 16px;
@@ -1245,10 +1269,18 @@
       color: #000 !important;
       padding: 0 !important;
     }
-    body.training-report-printing > *:not(#trainingReportModal) {
+    body.training-report-printing > *:not(#trainingScreen) {
       display: none !important;
     }
-    body.training-report-printing #trainingReportModal {
+    body.training-report-printing #trainingScreen {
+      display: block !important;
+      max-width: none !important;
+      margin: 0 !important;
+    }
+    body.training-report-printing #trainingScreen > *:not(#trainingReportPanel) {
+      display: none !important;
+    }
+    body.training-report-printing #trainingReportPanel {
       display: block !important;
       position: static !important;
       width: auto !important;
@@ -1257,18 +1289,8 @@
       padding: 0 !important;
       overflow: visible !important;
     }
-    body.training-report-printing .training-report-box {
-      width: auto !important;
-      max-width: none !important;
-      max-height: none !important;
-      overflow: visible !important;
-      box-shadow: none !important;
-      border: 0 !important;
-      padding: 0 !important;
-      background: #fff !important;
-    }
-    body.training-report-printing .training-report-box > h2,
-    body.training-report-printing .training-report-box > .report-buttons {
+    body.training-report-printing #trainingReportPanel > h2,
+    body.training-report-printing #trainingReportPanel > .training-report-actions {
       display: none !important;
     }
     body.training-report-printing .training-report {
@@ -1693,11 +1715,11 @@
       grid-template-columns: 1fr;
     }
     .training-table-wrap {
-      border: 1px solid var(--theme_border);
-      background: var(--theme_surface);
-      box-shadow: var(--theme_shadow-soft);
-      max-height: calc(100svh - 330px);
-      overflow: auto;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      max-height: none;
+      overflow: visible;
     }
     .training-table-wrap table {
       display: table;
@@ -2237,18 +2259,14 @@
       <tbody id="trainingTableBody"></tbody>
     </table>
   </div>
-</div>
-
-<!-- 350-1 Training Report Modal -->
-<div class="report-overlay" id="trainingReportModal">
-  <div class="report-box training-report-box">
+  <div id="trainingReportPanel" class="training-report-panel">
     <h2>350-1 Training Report</h2>
-    <div class="training-report" id="trainingReportContent"></div>
-    <div class="report-buttons">
+    <div class="training-report-actions">
       <button class="btn-small btn-generate" onclick="printTrainingReport()">Print</button>
       <button class="btn-small btn-import" onclick="downloadTrainingReport()">&#8595; Download .html</button>
       <button class="btn-small btn-danger" onclick="closeTrainingReport()">Close</button>
     </div>
+    <div class="training-report" id="trainingReportContent"></div>
   </div>
 </div>
 
@@ -3048,11 +3066,13 @@ function generateTrainingReport() {
       ${trainingReportSection('Due within 30 days', dueSoon, 'due')}
     </section>
   `;
-  document.getElementById('trainingReportModal').classList.add('active');
+  const panel = document.getElementById('trainingReportPanel');
+  panel.classList.add('active');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function closeTrainingReport() {
-  document.getElementById('trainingReportModal').classList.remove('active');
+  document.getElementById('trainingReportPanel').classList.remove('active');
 }
 
 function printTrainingReport() {
@@ -4379,7 +4399,6 @@ document.getElementById('addModal').addEventListener('click', function(e) { if (
 document.getElementById('importModal').addEventListener('click', function(e) { if (e.target === this) closeImportModal(); });
 document.getElementById('tdyLeaveModal').addEventListener('click', function(e) { if (e.target === this) closeTdyLeaveModal(); });
 document.getElementById('reportModal').addEventListener('click', function(e) { if (e.target === this) closeReport(); });
-document.getElementById('trainingReportModal').addEventListener('click', function(e) { if (e.target === this) closeTrainingReport(); });
 document.getElementById('addFirst').addEventListener('keydown', function(e) { if (e.key === 'Enter') savePerson(); });
 
 // ─── Auth ───
