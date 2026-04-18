@@ -127,6 +127,20 @@ def init_db():
         )
     ''')
 
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS scheduled_events (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            person_id  INTEGER NOT NULL,
+            platoon    TEXT NOT NULL,
+            status     TEXT NOT NULL,
+            from_date  TEXT DEFAULT '',
+            to_date    TEXT DEFAULT '',
+            notes      TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY(person_id) REFERENCES personnel(id) ON DELETE CASCADE
+        )
+    ''')
+
     # ── Migrations ──
     cols = [row[1] for row in cur.execute('PRAGMA table_info(personnel)').fetchall()]
     if 'present_date' not in cols:
@@ -153,6 +167,19 @@ def init_db():
     for col, default in [('sched_status',''), ('sched_from',''), ('sched_to',''), ('sched_notes','')]:
         if col not in cols:
             cur.execute(f'ALTER TABLE personnel ADD COLUMN {col} TEXT DEFAULT ""')
+
+    scols = [row[1] for row in cur.execute('PRAGMA table_info(scheduled_events)').fetchall()]
+    if scols:
+        cur.execute(
+            "INSERT INTO scheduled_events (person_id, platoon, status, from_date, to_date, notes) "
+            "SELECT id, platoon, sched_status, sched_from, sched_to, sched_notes FROM personnel p "
+            "WHERE sched_status != '' AND NOT EXISTS ("
+            "  SELECT 1 FROM scheduled_events s "
+            "  WHERE s.person_id = p.id AND s.status = p.sched_status "
+            "  AND s.from_date = p.sched_from AND s.to_date = p.sched_to "
+            "  AND s.notes = p.sched_notes"
+            ")"
+        )
 
     # ── Seed legacy admin user only when Clerk is not configured ──
     cur.execute('SELECT COUNT(*) FROM users')
@@ -564,8 +591,25 @@ def get_personnel():
     rows = conn.execute(
         'SELECT * FROM personnel WHERE platoon = ? ORDER BY rank, last, first', (platoon,)
     ).fetchall()
+    scheduled_rows = conn.execute(
+        'SELECT * FROM scheduled_events WHERE platoon = ? ORDER BY from_date, to_date, id', (platoon,)
+    ).fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+    scheduled_by_person = {}
+    for r in scheduled_rows:
+        scheduled_by_person.setdefault(r['person_id'], []).append(dict(r))
+    result = []
+    for r in rows:
+        item = dict(r)
+        events = scheduled_by_person.get(r['id'], [])
+        item['scheduled_events'] = events
+        if events:
+            item['sched_status'] = events[0]['status']
+            item['sched_from'] = events[0]['from_date']
+            item['sched_to'] = events[0]['to_date']
+            item['sched_notes'] = events[0]['notes']
+        result.append(item)
+    return jsonify(result)
 
 
 @app.route('/api/personnel', methods=['POST'])
@@ -612,6 +656,77 @@ def update_person(person_id):
     return jsonify(dict(row))
 
 
+@app.route('/api/personnel/<int:person_id>/schedule', methods=['POST'])
+@login_required
+def add_scheduled_event(person_id):
+    data = request.get_json()
+    conn = get_db()
+    person = conn.execute('SELECT id, rank, last, first, platoon FROM personnel WHERE id = ?', (person_id,)).fetchone()
+    if person is None:
+        conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    user = get_current_user()
+    if not has_platoon_access(user, person['platoon']):
+        conn.close()
+        return jsonify({'error': 'Forbidden'}), 403
+
+    status = data.get('status', '').strip()
+    if status not in ('tdy', 'leave', 'pass', 'other', 'ftr'):
+        conn.close()
+        return jsonify({'error': 'Invalid scheduled status'}), 400
+
+    cur = conn.execute(
+        'INSERT INTO scheduled_events (person_id, platoon, status, from_date, to_date, notes) VALUES (?, ?, ?, ?, ?, ?)',
+        (person_id, person['platoon'], status, data.get('from_date', ''), data.get('to_date', ''), data.get('notes', ''))
+    )
+    new_id = cur.lastrowid
+    first = conn.execute(
+        'SELECT * FROM scheduled_events WHERE person_id = ? ORDER BY from_date, to_date, id LIMIT 1', (person_id,)
+    ).fetchone()
+    conn.execute(
+        'UPDATE personnel SET sched_status = ?, sched_from = ?, sched_to = ?, sched_notes = ? WHERE id = ?',
+        (first['status'], first['from_date'], first['to_date'], first['notes'], person_id)
+    )
+    conn.commit()
+    row = conn.execute('SELECT * FROM scheduled_events WHERE id = ?', (new_id,)).fetchone()
+    conn.close()
+    log_action('SCHEDULE_STATUS', f'{person["rank"]} {person["last"]}: {status} on {data.get("from_date", "")}', person['platoon'])
+    return jsonify(dict(row)), 201
+
+
+@app.route('/api/schedules/<int:event_id>', methods=['DELETE'])
+@login_required
+def delete_scheduled_event(event_id):
+    conn = get_db()
+    row = conn.execute('SELECT * FROM scheduled_events WHERE id = ?', (event_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    user = get_current_user()
+    if not has_platoon_access(user, row['platoon']):
+        conn.close()
+        return jsonify({'error': 'Forbidden'}), 403
+    person_id = row['person_id']
+    conn.execute('DELETE FROM scheduled_events WHERE id = ?', (event_id,))
+    first = conn.execute(
+        'SELECT * FROM scheduled_events WHERE person_id = ? ORDER BY from_date, to_date, id LIMIT 1', (person_id,)
+    ).fetchone()
+    if first:
+        conn.execute(
+            'UPDATE personnel SET sched_status = ?, sched_from = ?, sched_to = ?, sched_notes = ? WHERE id = ?',
+            (first['status'], first['from_date'], first['to_date'], first['notes'], person_id)
+        )
+    else:
+        conn.execute(
+            "UPDATE personnel SET sched_status = '', sched_from = '', sched_to = '', sched_notes = '' WHERE id = ?",
+            (person_id,)
+        )
+    conn.commit()
+    conn.close()
+    log_action('DELETE_SCHEDULE', f'{row["status"]} on {row["from_date"]}', row['platoon'])
+    return jsonify({'success': True})
+
+
 @app.route('/api/personnel/<int:person_id>', methods=['DELETE'])
 @login_required
 def delete_person(person_id):
@@ -619,6 +734,7 @@ def delete_person(person_id):
     row = conn.execute('SELECT rank, last, first, platoon FROM personnel WHERE id = ?', (person_id,)).fetchone()
     if row:
         log_action('DELETE_PERSON', f'{row["rank"]} {row["last"]}, {row["first"]}', row['platoon'])
+    conn.execute('DELETE FROM scheduled_events WHERE person_id = ?', (person_id,))
     conn.execute('DELETE FROM personnel WHERE id = ?', (person_id,))
     conn.commit()
     conn.close()
@@ -753,6 +869,7 @@ def export_backup():
 
     if user['is_admin']:
         personnel = [dict(r) for r in conn.execute('SELECT * FROM personnel').fetchall()]
+        scheduled_events = [dict(r) for r in conn.execute('SELECT * FROM scheduled_events').fetchall()]
         settings  = [dict(r) for r in conn.execute('SELECT * FROM settings').fetchall()]
         users     = [dict(r) for r in conn.execute(
             'SELECT id, username, email, full_name, is_admin, platoons, clerk_user_id FROM users'
@@ -764,6 +881,9 @@ def export_backup():
         personnel = [dict(r) for r in conn.execute(
             f'SELECT * FROM personnel WHERE platoon IN ({placeholders})', accessible
         ).fetchall()]
+        scheduled_events = [dict(r) for r in conn.execute(
+            f'SELECT * FROM scheduled_events WHERE platoon IN ({placeholders})', accessible
+        ).fetchall()]
         settings  = [dict(r) for r in conn.execute('SELECT * FROM settings').fetchall()]
         users     = []
         label = '-'.join(accessible)
@@ -773,6 +893,7 @@ def export_backup():
         'version': 1,
         'exported_at': datetime.utcnow().isoformat() + 'Z',
         'personnel': personnel,
+        'scheduled_events': scheduled_events,
         'settings': settings,
         'users': users,
     }
@@ -798,6 +919,7 @@ def import_backup():
 
         if 'personnel' in payload:
             if user['is_admin']:
+                conn.execute('DELETE FROM scheduled_events')
                 conn.execute('DELETE FROM personnel')
                 for p in payload['personnel']:
                     conn.execute(
@@ -814,6 +936,12 @@ def import_backup():
                     if p.get('platoon') not in accessible:
                         continue
                     conn.execute(
+                        'DELETE FROM scheduled_events WHERE platoon = ? AND person_id IN ('
+                        'SELECT id FROM personnel WHERE platoon = ? AND last = ? AND first = ?'
+                        ')',
+                        (p['platoon'], p['platoon'], p.get('last',''), p.get('first',''))
+                    )
+                    conn.execute(
                         'DELETE FROM personnel WHERE platoon = ? AND last = ? AND first = ?',
                         (p['platoon'], p.get('last',''), p.get('first',''))
                     )
@@ -825,6 +953,19 @@ def import_backup():
                          p.get('platoon','2nd'))
                     )
                     restored_personnel += 1
+
+        if 'scheduled_events' in payload:
+            accessible = ['*'] if user['is_admin'] else [p.strip() for p in (user['platoons'] or '').split(',') if p.strip()]
+            for s in payload['scheduled_events']:
+                if not user['is_admin'] and s.get('platoon') not in accessible:
+                    continue
+                conn.execute(
+                    'INSERT OR REPLACE INTO scheduled_events (id, person_id, platoon, status, from_date, to_date, notes, created_at) '
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    (s.get('id') if user['is_admin'] else None, s.get('person_id'), s.get('platoon', '2nd'),
+                     s.get('status', ''), s.get('from_date', ''), s.get('to_date', ''),
+                     s.get('notes', ''), s.get('created_at', datetime.utcnow().isoformat()))
+                )
 
         if 'settings' in payload:
             conn.execute('DELETE FROM settings')
@@ -895,18 +1036,42 @@ def reset_day():
 # ── Midnight auto-reset background thread ──
 
 def _activate_scheduled(conn, today_str):
-    """Promote sched_* entries whose start date has arrived."""
+    """Promote scheduled entries whose start date has arrived."""
     rows = conn.execute(
-        "SELECT id, sched_status, sched_from, sched_to, sched_notes FROM personnel "
-        "WHERE sched_status != '' AND sched_from <= ?", (today_str,)
+        "SELECT * FROM scheduled_events WHERE from_date != '' AND from_date <= ? ORDER BY from_date, id",
+        (today_str,)
     ).fetchall()
     for r in rows:
         conn.execute(
             "UPDATE personnel SET status=?, from_date=?, to_date=?, notes=?, "
             "sched_status='', sched_from='', sched_to='', sched_notes='' WHERE id=?",
+            (r['status'], r['from_date'], r['to_date'], r['notes'], r['person_id'])
+        )
+        conn.execute('DELETE FROM scheduled_events WHERE id = ?', (r['id'],))
+        first = conn.execute(
+            'SELECT * FROM scheduled_events WHERE person_id = ? ORDER BY from_date, to_date, id LIMIT 1',
+            (r['person_id'],)
+        ).fetchone()
+        if first:
+            conn.execute(
+                'UPDATE personnel SET sched_status = ?, sched_from = ?, sched_to = ?, sched_notes = ? WHERE id = ?',
+                (first['status'], first['from_date'], first['to_date'], first['notes'], r['person_id'])
+            )
+
+    legacy_rows = conn.execute(
+        "SELECT id, sched_status, sched_from, sched_to, sched_notes FROM personnel "
+        "WHERE sched_status != '' AND sched_from <= ? AND NOT EXISTS ("
+        "  SELECT 1 FROM scheduled_events s WHERE s.person_id = personnel.id"
+        ")",
+        (today_str,)
+    ).fetchall()
+    for r in legacy_rows:
+        conn.execute(
+            "UPDATE personnel SET status=?, from_date=?, to_date=?, notes=?, "
+            "sched_status='', sched_from='', sched_to='', sched_notes='' WHERE id=?",
             (r['sched_status'], r['sched_from'], r['sched_to'], r['sched_notes'], r['id'])
         )
-    return len(rows)
+    return len(rows) + len(legacy_rows)
 
 
 def _midnight_reset_worker():

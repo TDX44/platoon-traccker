@@ -1299,6 +1299,32 @@
     font-size: 0.78rem;
     margin-top: 3px;
   }
+  .scheduled-event-list {
+    display: grid;
+    gap: 8px;
+    margin: 10px 0 12px;
+  }
+  .scheduled-event-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 9px 10px;
+    border: 1px solid var(--theme_border);
+    border-radius: var(--theme_radius);
+    background: var(--theme_surface-soft);
+  }
+  .scheduled-event-title {
+    color: var(--theme_text);
+    font-weight: 700;
+    font-size: 0.86rem;
+  }
+  .scheduled-event-meta {
+    color: var(--theme_text-muted);
+    font-size: 0.76rem;
+    margin-top: 3px;
+    line-height: 1.3;
+  }
 
   #futureScheduleNotice {
     background: #f3f7ff !important;
@@ -1356,14 +1382,37 @@
       min-height: 48px;
     }
     body.dark-mode .hamburger-btn { background: rgba(23,26,31,0.94); }
+    .hamburger-wrap {
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      right: max(10px, env(safe-area-inset-right));
+      z-index: 120;
+      pointer-events: none;
+    }
+    .hamburger-btn,
     .hamburger-dropdown {
-      left: 0;
-      right: 0;
+      pointer-events: auto;
+    }
+    .hamburger-dropdown {
+      position: fixed;
+      top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+      left: max(10px, env(safe-area-inset-left));
+      right: max(10px, env(safe-area-inset-right));
       min-width: 0;
+      width: auto;
       max-height: calc(100svh - 72px);
       overflow-y: auto;
+      border-radius: var(--theme_radius);
     }
-    .hamburger-dropdown button { min-height: 48px; }
+    .hamburger-dropdown button {
+      min-height: 48px;
+      width: 100%;
+      text-align: left;
+    }
+    .menu-submenu button {
+      padding-left: 26px;
+    }
     #platoonScreen { max-width: none; }
     .edit-unit-name {
       font-size: 1.25rem;
@@ -1682,6 +1731,9 @@
     .duty-row {
       grid-template-columns: 1fr;
     }
+    .scheduled-event-row {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 380px) {
@@ -1955,6 +2007,9 @@
       &#128337; Start date is in the future — this will be <strong>scheduled</strong> and activate automatically on the start date.
     </div>
 
+    <div class="notes-preview-label" id="scheduledEventsLabel" style="display:none;margin-top:10px;">Scheduled Events</div>
+    <div class="scheduled-event-list" id="scheduledEventsList"></div>
+
     <div class="modal-buttons">
       <button class="btn-small btn-danger" id="clearScheduleBtn" onclick="clearSchedule()" style="display:none">&#10005; Clear Scheduled</button>
       <button class="btn-small btn-danger" onclick="closeTdyLeaveModal()">Cancel</button>
@@ -2104,7 +2159,8 @@ async function load() {
       from: p.from_date || '', to: p.to_date || '',
       present_date: p.present_date || '',
       sched_status: p.sched_status || '', sched_from: p.sched_from || '',
-      sched_to: p.sched_to || '', sched_notes: p.sched_notes || ''
+      sched_to: p.sched_to || '', sched_notes: p.sched_notes || '',
+      scheduled_events: p.scheduled_events || []
     }));
     // Activate any scheduled entries whose start date has arrived
     api('POST', '/activate-scheduled');
@@ -2175,7 +2231,7 @@ function statusFilterMatches(p, filter) {
   if (filter === 'leave') return p.status === 'leave' || p.status === 'pass';
   if (filter === 'tdy') return p.status === 'tdy';
   if (filter === 'other') return p.status === 'other' || p.status === 'ftr';
-  if (filter === 'scheduled') return !!p.sched_status;
+  if (filter === 'scheduled') return scheduledEventsFor(p).length > 0 || !!p.sched_status;
   if (filter === 'loan') return p.status === 'loan';
   return true;
 }
@@ -2227,7 +2283,8 @@ function renderInsights(counts, total, todayStr) {
   const unaccounted = personnel.filter(p => p.status !== 'loan' && isUnaccounted(p));
   const returningToday = personnel.filter(p => p.status !== 'present' && p.to === todayStr);
   const returningSoon = personnel.filter(p => p.status !== 'present' && p.to && p.to > todayStr && p.to <= nextWeek);
-  const scheduledSoon = personnel.filter(p => p.sched_status && p.sched_from && p.sched_from >= todayStr && p.sched_from <= nextWeek);
+  const scheduledSoon = personnel.flatMap(p => scheduledEventsFor(p).map(event => ({ ...event, person: p })))
+    .filter(event => event.from_date && event.from_date >= todayStr && event.from_date <= nextWeek);
   const ftr = personnel.filter(p => p.status === 'ftr');
 
   const cards = [
@@ -2253,7 +2310,7 @@ function renderInsights(counts, total, todayStr) {
       cls: scheduledSoon.length ? 'insight-action' : 'insight-good',
       value: scheduledSoon.length,
       label: 'Scheduled soon',
-      detail: scheduledSoon.length ? summarizePeople(scheduledSoon) : `Through ${formatDateShort(nextWeek)}`
+      detail: scheduledSoon.length ? summarizePeople(scheduledSoon.map(event => event.person)) : `Through ${formatDateShort(nextWeek)}`
     }
   ];
 
@@ -2305,6 +2362,10 @@ function statusBadge(status) {
   return `<span class="status-badge badge-${status}">${labels[status] || status}</span>`;
 }
 
+function scheduledEventsFor(p) {
+  return Array.isArray(p.scheduled_events) ? p.scheduled_events : [];
+}
+
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -2353,7 +2414,7 @@ function render() {
     ? applySort(visible.filter(p => p.status === 'other' || p.status === 'ftr'))
     : visible.filter(p => p.status === 'other' || p.status === 'ftr').sort(endDateSort);
   const loanList        = applySort(visible.filter(p => p.status === 'loan'));
-  const scheduledList   = applySort(visible.filter(p => p.sched_status));
+  const scheduledList   = applySort(visible.filter(p => scheduledEventsFor(p).length || p.sched_status));
 
   const body = document.getElementById('personnelBody');
   body.innerHTML = '';
@@ -2361,7 +2422,7 @@ function render() {
   // Counts always use full (unfiltered) personnel — loan excluded from accountability counts
   let counts = { present:0, unaccounted:0, leave:0, pass:0, tdy:0, other:0, ftr:0, loan:0, scheduled:0 };
   personnel.forEach(p => {
-    if (p.sched_status) counts.scheduled++;
+    counts.scheduled += scheduledEventsFor(p).length || (p.sched_status ? 1 : 0);
     if (p.status === 'loan') { counts.loan++; }
     else if (isUnaccounted(p)) { counts.unaccounted++; }
     else { counts[p.status] = (counts[p.status] || 0) + 1; }
@@ -2461,8 +2522,15 @@ function render() {
     scheduledList.forEach(p => {
       const i = personnel.indexOf(p);
       const labels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
-      const dateRange = (p.sched_from || p.sched_to)
-        ? `${formatDateShort(p.sched_from)} - ${formatDateShort(p.sched_to)}` : '';
+      const events = scheduledEventsFor(p).length
+        ? scheduledEventsFor(p)
+        : [{ status: p.sched_status, from_date: p.sched_from, to_date: p.sched_to, notes: p.sched_notes }];
+      const eventSummary = events.map(event => {
+        const dateRange = (event.from_date || event.to_date)
+          ? `${formatDateShort(event.from_date)} - ${formatDateShort(event.to_date)}` : '';
+        const notes = event.notes ? `: ${escapeHtml(event.notes)}` : '';
+        return `<div class="away-notes" style="color:#fdcb6e;">${labels[event.status] || event.status}${notes}${dateRange ? ` · ${dateRange}` : ''}</div>`;
+      }).join('');
       const tr = document.createElement('tr');
       tr.className = 'roster-row away-row';
       tr.innerHTML = `
@@ -2472,13 +2540,10 @@ function render() {
         <td class="name-cell mobile-name-cell edit-name-trigger" onclick="openEditModal(${i})" onkeydown="openEditModalFromKey(event, ${i})" role="button" tabindex="0" title="Edit ${escapeHtml(p.rank)} ${escapeHtml(p.last)}, ${escapeHtml(p.first)}">
           ${p.last}, ${p.first}
           <span class="status-badge mobile-status-chip" style="background:#fdcb6e33;color:#fdcb6e;border:1px solid #fdcb6e;">Scheduled</span>
-          <div class="away-notes" style="color:#fdcb6e;">
-            ${labels[p.sched_status] || p.sched_status}${p.sched_notes ? ': ' + escapeHtml(p.sched_notes) : ''}
-          </div>
-          ${dateRange ? `<div class="away-dates">${dateRange}</div>` : ''}
+          ${eventSummary}
           <span class="mobile-edit-hint">Tap name to edit</span>
         </td>
-        <td class="mobile-primary-action-cell"><span class="status-badge" style="background:#fdcb6e33;color:#fdcb6e;border:1px solid #fdcb6e;">Scheduled</span></td>
+        <td class="mobile-primary-action-cell"><span class="status-badge" style="background:#fdcb6e33;color:#fdcb6e;border:1px solid #fdcb6e;">${events.length} Scheduled</span></td>
         <td class="mobile-secondary-action-cell"><span class="desktop-status-note" style="font-size:0.75em;color:#b2bec3;font-style:italic;white-space:nowrap;">Now: ${p.status}</span><button class="btn-tdy-leave mobile-only-action" onclick="openTdyLeave(${i})">TDY / Leave</button></td>
         <td class="mobile-edit-cell"><button class="btn-small btn-edit" onclick="openTdyLeave(${i})" title="Edit">&#9998;</button></td>
       `;
@@ -2819,23 +2884,7 @@ function openTdyLeave(i) {
   document.getElementById('calendarContainer').classList.remove('open');
   calTarget = '';
 
-  // Show "Clear Scheduled" if a schedule already exists
-  document.getElementById('clearScheduleBtn').style.display = p.sched_status ? 'inline-block' : 'none';
-
-  // If editing a scheduled (not yet active) entry, load the scheduled fields instead
-  if (p.sched_status) {
-    setAwayStatus(p.sched_status);
-    awayFrom = p.sched_from || ''; awayTo = p.sched_to || '';
-    fromDisplay.textContent = formatDateDisplay(awayFrom);
-    toDisplay.textContent = formatDateDisplay(awayTo);
-    fromDisplay.classList.toggle('selected', !!awayFrom);
-    toDisplay.classList.toggle('selected', !!awayTo);
-    if (p.sched_status === 'tdy' && p.sched_notes) {
-      const idx = p.sched_notes.indexOf(' - ');
-      document.getElementById('awaySchool').value = idx !== -1 ? p.sched_notes.slice(0, idx) : p.sched_notes;
-      document.getElementById('awayLocation').value = idx !== -1 ? p.sched_notes.slice(idx + 3) : '';
-    }
-  }
+  renderScheduledEvents(p);
 
   updateFutureNotice();
   updateNotesPreview();
@@ -2866,31 +2915,100 @@ async function saveTdyLeave() {
   }
 
   if (isFuture) {
-    // Save as scheduled — don't change current status
-    p.sched_status = awayStatus;
-    p.sched_from   = awayFrom;
-    p.sched_to     = awayTo;
-    p.sched_notes  = notesVal;
+    // Save as an additional scheduled event without changing current status.
+    const event = await api('POST', `/personnel/${p.id}/schedule`, {
+      status: awayStatus,
+      from_date: awayFrom,
+      to_date: awayTo,
+      notes: notesVal
+    });
+    if (!event || event.error) {
+      alert(event && event.error ? event.error : 'Could not save scheduled event.');
+      return;
+    }
+    p.scheduled_events = [...scheduledEventsFor(p), event].sort(scheduleSort);
+    syncFirstSchedule(p);
   } else {
-    // Active immediately — clear any existing schedule
+    // Active immediately. Future scheduled events stay on the calendar.
     p.status = awayStatus;
     p.notes  = notesVal;
     p.from   = awayStatus === 'loan' ? '' : awayFrom;
     p.to     = awayStatus === 'loan' ? '' : awayTo;
-    p.sched_status = ''; p.sched_from = ''; p.sched_to = ''; p.sched_notes = '';
+    await apiUpdate(p);
   }
 
-  await apiUpdate(p);
   closeTdyLeaveModal();
   render();
 }
 
-function clearSchedule() {
+async function clearSchedule() {
   if (tdyLeaveIndex < 0) return;
   const p = personnel[tdyLeaveIndex];
-  p.sched_status = ''; p.sched_from = ''; p.sched_to = ''; p.sched_notes = '';
-  apiUpdate(p);
-  closeTdyLeaveModal();
+  if (!scheduledEventsFor(p).length) return;
+  if (!confirm(`Clear all ${scheduledEventsFor(p).length} scheduled events for ${p.rank} ${p.last}?`)) return;
+  for (const event of scheduledEventsFor(p)) {
+    await api('DELETE', `/schedules/${event.id}`);
+  }
+  p.scheduled_events = [];
+  syncFirstSchedule(p);
+  renderScheduledEvents(p);
+  render();
+}
+
+function scheduleSort(a, b) {
+  const aDate = a.from_date || '9999-12-31';
+  const bDate = b.from_date || '9999-12-31';
+  if (aDate !== bDate) return aDate.localeCompare(bDate);
+  return (a.id || 0) - (b.id || 0);
+}
+
+function syncFirstSchedule(p) {
+  const first = scheduledEventsFor(p).sort(scheduleSort)[0];
+  p.sched_status = first ? first.status : '';
+  p.sched_from = first ? first.from_date : '';
+  p.sched_to = first ? first.to_date : '';
+  p.sched_notes = first ? first.notes : '';
+}
+
+function renderScheduledEvents(p) {
+  const events = scheduledEventsFor(p).sort(scheduleSort);
+  const label = document.getElementById('scheduledEventsLabel');
+  const list = document.getElementById('scheduledEventsList');
+  const clearBtn = document.getElementById('clearScheduleBtn');
+  label.style.display = events.length ? 'block' : 'none';
+  clearBtn.style.display = events.length ? 'inline-block' : 'none';
+  clearBtn.textContent = events.length > 1 ? 'Clear All Scheduled' : 'Clear Scheduled';
+  if (!events.length) {
+    list.innerHTML = '';
+    return;
+  }
+  const labels = { tdy:'TDY', leave:'Leave', pass:'Pass', other:'Other', ftr:'FTR' };
+  list.innerHTML = events.map(event => {
+    const dateRange = (event.from_date || event.to_date)
+      ? `${formatDateShort(event.from_date)} - ${formatDateShort(event.to_date)}` : 'No dates';
+    return `
+      <div class="scheduled-event-row">
+        <div>
+          <div class="scheduled-event-title">${labels[event.status] || event.status} · ${dateRange}</div>
+          <div class="scheduled-event-meta">${escapeHtml(event.notes || 'No notes')}</div>
+        </div>
+        <button class="btn-small btn-danger" onclick="deleteScheduledEvent(${event.id})">Remove</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function deleteScheduledEvent(eventId) {
+  if (tdyLeaveIndex < 0) return;
+  const p = personnel[tdyLeaveIndex];
+  const res = await api('DELETE', `/schedules/${eventId}`);
+  if (res && res.error) {
+    alert(res.error);
+    return;
+  }
+  p.scheduled_events = scheduledEventsFor(p).filter(event => event.id !== eventId);
+  syncFirstSchedule(p);
+  renderScheduledEvents(p);
   render();
 }
 
@@ -2970,7 +3088,8 @@ async function savePerson() {
       id: newPerson.id, rank: newPerson.rank, last: newPerson.last, first: newPerson.first,
       status: newPerson.status, notes: newPerson.notes || '',
       from: newPerson.from_date || '', to: newPerson.to_date || '',
-      present_date: newPerson.present_date || ''
+      present_date: newPerson.present_date || '',
+      scheduled_events: []
     });
   }
   closeAddModal();
@@ -3038,7 +3157,8 @@ async function confirmImport() {
     const newPerson = await api('POST', '/personnel', { rank: r.rank, last: r.last, first: r.first, platoon: currentPlatoon });
     personnel.push({
       id: newPerson.id, rank: newPerson.rank, last: newPerson.last, first: newPerson.first,
-      status: newPerson.status, notes: '', from: '', to: '', present_date: ''
+      status: newPerson.status, notes: '', from: '', to: '', present_date: '',
+      scheduled_events: []
     });
   }
   closeImportModal();
